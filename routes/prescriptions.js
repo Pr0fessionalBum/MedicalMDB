@@ -127,7 +127,7 @@ router.get("/", async (req, res) => {
           new Promise((resolve, reject) => {
             res.render(
               "partials/prescription-row",
-              { rx },
+              { rx, canEdit: req.session?.physicianRole === "admin" },
               (err, html) => (err ? reject(err) : resolve(html))
             );
           })
@@ -159,7 +159,8 @@ router.get("/", async (req, res) => {
       renderPagination,
       user: req.session?.physicianName,
       activePage: "prescriptions",
-      req
+      req,
+      canEdit: req.session?.physicianRole === "admin"
     });
   } catch (err) {
     console.error("PRESCRIPTIONS ROUTE ERROR:", err);

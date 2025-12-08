@@ -131,9 +131,8 @@ router.get("/", async (req, res) => {
 
 function canEditBilling(req, billing, appointment) {
   if (!req.session?.physicianId) return false;
-  if (req.session.physicianRole === "admin") return true;
-  if (appointment?.physicianID?.toString() === req.session.physicianId.toString()) return true;
-  return false;
+  // Only admin can edit/delete bills now
+  return req.session.physicianRole === "admin";
 }
 
 // EDIT FORM
@@ -196,6 +195,7 @@ router.get("/:id", async (req, res) => {
 
 // DELETE BILLING
 router.post("/:id/delete", async (req, res) => {
+  if (req.session?.physicianRole !== "admin") return res.status(403).send("Only admin can delete billings");
   try {
     await Billing.findByIdAndUpdate(req.params.id, {
       isDeleted: true,

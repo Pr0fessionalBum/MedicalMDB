@@ -25,15 +25,17 @@
   </td>
 
   <td>
-    <a class="btn btn-small" href="/prescriptions/<%= rx._id %>/edit">Edit</a>
-    <form method="POST"
-          action="/prescriptions/<%= rx._id %>/delete"
-          style="display:inline;">
-      <button class="btn btn-small"
-              style="background:#dc2626;font-size:11px;"
-              onclick="return confirm('Delete this prescription?')">
-        Delete
-      </button>
-    </form>
+    <% if (typeof canEdit === "undefined" || canEdit) { %>
+      <a class="btn btn-small" href="/prescriptions/<%= rx._id %>/edit">Edit</a>
+      <form method="POST"
+            action="/prescriptions/<%= rx._id %>/delete"
+            style="display:inline;">
+        <button class="btn btn-small"
+                style="background:#dc2626;font-size:11px;"
+                onclick="return confirm('Delete this prescription?')">
+          Delete
+        </button>
+      </form>
+    <% } %>
   </td>
 </tr>

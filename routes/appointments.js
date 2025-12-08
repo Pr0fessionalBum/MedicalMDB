@@ -162,10 +162,8 @@ router.get("/", async (req, res) => {
 
 function canEditAppointment(req, appointment) {
   if (!req.session?.physicianId) return false;
-  if (req.session.physicianRole === "admin") return true;
-  if (appointment.physicianID?.toString() === req.session.physicianId.toString()) return true;
-  if (appointment.physicianID?.username === "demo_doctor") return true;
-  return false;
+  // Only admin can edit/delete appointments now
+  return req.session.physicianRole === "admin";
 }
 
 // DETAIL VIEW
@@ -199,6 +197,7 @@ router.get("/:id", async (req, res) => {
 // EDIT FORM
 router.get("/:id/edit", async (req, res) => {
   if (req.session?.guestPatientId) return res.status(403).send("Guests cannot edit appointments");
+  if (req.session?.physicianRole !== "admin") return res.status(403).send("Only admin can edit appointments");
   const appt = await Appointment.findById(req.params.id).lean();
   if (!appt) return res.status(404).send("Appointment not found");
   if (!canEditAppointment(req, appt)) return res.status(403).send("Unauthorized");
@@ -212,6 +211,7 @@ router.get("/:id/edit", async (req, res) => {
 // UPDATE APPOINTMENT
 router.post("/:id/edit", async (req, res) => {
   if (req.session?.guestPatientId) return res.status(403).send("Guests cannot edit appointments");
+  if (req.session?.physicianRole !== "admin") return res.status(403).send("Only admin can edit appointments");
   const appt = await Appointment.findById(req.params.id);
   if (!appt) return res.status(404).send("Appointment not found");
   if (!canEditAppointment(req, appt)) return res.status(403).send("Unauthorized");
@@ -264,6 +264,7 @@ router.post("/", async (req, res) => {
 // DELETE
 router.post("/:id/delete", async (req, res) => {
   if (req.session?.guestPatientId) return res.status(403).send("Guests cannot delete appointments");
+  if (req.session?.physicianRole !== "admin") return res.status(403).send("Only admin can delete appointments");
   try {
     await Appointment.findByIdAndUpdate(req.params.id, {
       isDeleted: true,

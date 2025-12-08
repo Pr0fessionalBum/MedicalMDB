@@ -14,14 +14,14 @@
     <a class="btn btn-small btn-ghost" href="/billings/<%= bill._id %>">View</a>
     <% if (billingsCanEdit) { %>
       <a class="btn btn-small" href="/billings/<%= bill._id %>/edit">Edit</a>
+      <form method="POST" action="/billings/<%= bill._id %>/delete" style="display:inline;">
+        <button class="btn btn-small" 
+                style="background:#dc2626;"
+                onclick="return confirm('Delete this billing?')">
+          Delete
+        </button>
+      </form>
     <% } %>
-    <form method="POST" action="/billings/<%= bill._id %>/delete" style="display:inline;">
-      <button class="btn btn-small" 
-              style="background:#dc2626;"
-              onclick="return confirm('Delete this billing?')">
-        Delete
-      </button>
-    </form>
   </td>
 </tr>
 <% }) %>

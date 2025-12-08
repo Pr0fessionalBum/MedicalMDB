@@ -71,7 +71,7 @@ router.get("/", async (req, res) => {
     if (ajax) {
       return res.render(
         "partials/patient-row",
-        { patients },
+        { patients, canEdit: req.session?.physicianRole === "admin" },
         (err, rowsHtml) => {
           if (err) return res.json({ error: err.message });
 
@@ -104,7 +104,8 @@ router.get("/", async (req, res) => {
       user: req.session.physicianName,
       req,                 // REQUIRED for pagination util
       renderPagination,    // <-- REQUIRED for EJS to call it
-      activePage: "patients"
+      activePage: "patients",
+      canEdit: req.session?.physicianRole === "admin"
     });
   } catch (err) {
     console.error(err);
@@ -114,6 +115,7 @@ router.get("/", async (req, res) => {
 
 // CREATE FORM
 router.get("/create", (req, res) => {
+  if (req.session?.physicianRole !== "admin") return res.status(403).send("Only admin can create patients");
   if (req.session?.guestPatientId) return res.status(403).send("Guests cannot create patients");
   res.render("patient-form", {
     patient: null,
@@ -123,6 +125,7 @@ router.get("/create", (req, res) => {
 
 // CREATE PATIENT
 router.post("/", async (req, res) => {
+  if (req.session?.physicianRole !== "admin") return res.status(403).send("Only admin can create patients");
   if (req.session?.guestPatientId) return res.status(403).send("Guests cannot create patients");
   try {
     const { name, dob, gender, phone, email, address } = req.body;
@@ -145,6 +148,7 @@ router.post("/", async (req, res) => {
 
 // EDIT FORM
 router.get("/:id/edit", async (req, res) => {
+  if (req.session?.physicianRole !== "admin") return res.status(403).send("Only admin can edit patients");
   if (req.session?.guestPatientId) return res.status(403).send("Guests cannot edit patients");
   const patient = await Patient.findById(req.params.id).lean();
   if (!patient) return res.status(404).send("Patient not found");
@@ -157,6 +161,7 @@ router.get("/:id/edit", async (req, res) => {
 
 // UPDATE PATIENT
 router.post("/:id/edit", async (req, res) => {
+  if (req.session?.physicianRole !== "admin") return res.status(403).send("Only admin can edit patients");
   if (req.session?.guestPatientId) return res.status(403).send("Guests cannot edit patients");
   try {
     const { name, dob, gender, phone, email, address } = req.body;
@@ -217,6 +222,7 @@ router.get("/:id", async (req, res) => {
 
 // DELETE PATIENT
 router.post("/:id/delete", async (req, res) => {
+  if (req.session?.physicianRole !== "admin") return res.status(403).send("Only admin can delete patients");
   if (req.session?.guestPatientId) return res.status(403).send("Guests cannot delete patients");
   await Patient.findByIdAndUpdate(req.params.id, {
     isDeleted: true,
