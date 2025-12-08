@@ -166,6 +166,43 @@ function canEditAppointment(req, appointment) {
   return req.session.physicianRole === "admin";
 }
 
+// CREATE FORM
+router.get("/create", async (req, res) => {
+  if (req.session?.guestPatientId) return res.status(403).send("Guests cannot create appointments");
+  const patients = await Patient.find({ isDeleted: false }).select("name").lean();
+  const physicians = await Physician.find({ isActive: true }).select("name").lean();
+
+  res.render("appointment-form", {
+    appointment: null,
+    patients,
+    physicians,
+    user: req.session.physicianName,
+  });
+});
+
+// CREATE APPOINTMENT
+router.post("/", async (req, res) => {
+  if (req.session?.guestPatientId) return res.status(403).send("Guests cannot create appointments");
+  try {
+    const { patientID, physicianID, date, notes, summary, diagnoses } = req.body;
+
+    await Appointment.create({
+      patientID,
+      physicianID,
+      date,
+      notes,
+      summary,
+      diagnoses: diagnoses ? JSON.parse(diagnoses) : [],
+    });
+
+    res.redirect("/appointments");
+
+  } catch (err) {
+    console.error('CREATE APPOINTMENT ERROR:', err);
+    res.status(400).send("Error creating appointment");
+  }
+});
+
 // DETAIL VIEW
 router.get("/:id", async (req, res) => {
   const appointment = await Appointment.findById(req.params.id)
@@ -225,41 +262,7 @@ router.post("/:id/edit", async (req, res) => {
   res.redirect("/appointments");
 });
 
-// CREATE FORM
-router.get("/create", async (req, res) => {
-  if (req.session?.guestPatientId) return res.status(403).send("Guests cannot create appointments");
-  const patients = await Patient.find({ isDeleted: false }).select("name").lean();
-  const physicians = await Physician.find({ isActive: true }).select("name").lean();
-
-  res.render("appointment-form", {
-    appointment: null,
-    patients,
-    physicians,
-    user: req.session.physicianName,
-  });
-});
-
-// CREATE APPOINTMENT
-router.post("/", async (req, res) => {
-  if (req.session?.guestPatientId) return res.status(403).send("Guests cannot create appointments");
-  try {
-    const { patientID, physicianID, date, notes, summary, diagnoses } = req.body;
-
-    await Appointment.create({
-      patientID,
-      physicianID,
-      date,
-      notes,
-      summary,
-      diagnoses: diagnoses ? JSON.parse(diagnoses) : [],
-    });
-
-    res.redirect("/appointments");
-
-  } catch (err) {
-    res.status(400).send("Error creating appointment");
-  }
-});
+// (create handlers moved above; duplicates removed)
 
 // DELETE
 router.post("/:id/delete", async (req, res) => {

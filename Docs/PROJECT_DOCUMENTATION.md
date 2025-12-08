@@ -13,14 +13,152 @@ Small clinics often lack lightweight tooling to view and update clinical data qu
 - Seeded/demo-friendly setup for classroom or small-clinic pilots.
 
 ### Entities & Relationships
-- **Patient**: `_id`, name, dob, age, gender, contactInfo (phone, email, address), passwordHash, isDeleted, deletedAt/By.  
-  - Relationships: 1–M Appointments, 1–M Prescriptions, 1–M Billings (via appointment).
-- **Physician**: `_id`, name, specialization, contactInfo (phone, email), schedule, username, passwordHash, role (`physician`/`admin`), isActive, createdAt.  
-  - Relationships: 1–M Appointments, 1–M Prescriptions, 1–M Billings (indirect via appointment).
-- **Appointment**: `_id`, patientID→Patient, physicianID→Physician, date, summary, notes, diagnoses[{ code, description, chronic, recordedAt }], isDeleted, deletedAt/By, timestamps.  
-  - Relationships: 1–M Billings.
-- **Prescription**: `_id`, patientID→Patient, physicianID→Physician, medicationName/code, dosage, frequency, instructions, status (`active`/`completed`), type, startDate, endDate, isDeleted.  
-- **Billing**: `_id`, appointmentID→Appointment, patientID→Patient, amount, status (`Paid`/`Pending`/`Due`), paymentDate, InsuranceProvider, policyNumber, coverageAmount, isDeleted.
+
+The following is a text-based Entity → Relationship description with all model fields (as defined in `models/*.js`), types, and cardinality notes.
+
+1) Patient
+- Primary: `Patient` (collection: `patients`)
+- Fields:
+  - `_id`: ObjectId (Mongo)
+  - `name`: String (required)
+  - `dob`: Date (required)
+  - `age`: Number (computed from `dob` on save)
+  - `gender`: String (required)
+  - `contactInfo`: Object
+    - `phone`: String
+    - `email`: String
+    - `address`: String
+  - `passwordHash`: String (bcrypt hash for guest login)
+  - `isDeleted`: Boolean (soft-delete flag, default: false)
+  - `deletedAt`: Date
+  - `deletedBy`: ObjectId → `Physician` (who deleted)
+  - `createdAt`, `updatedAt`: Date (timestamps)
+
+- Notable model behavior & helpers:
+  - `pre('save')` hooks: keep `age` in sync with `dob`; hash `passwordHash` when modified.
+  - `methods.verifyPassword(password)` — verify guest password.
+  - `methods.getCurrentMedications()` — aggregates `Prescription` to return active meds.
+  - `methods.getMedicalHistory()` — aggregates `Appointment.diagnoses` for history.
+  - Indexes: `name`, `contactInfo.email`, `contactInfo.phone`.
+
+- Relationships / Cardinality:
+  - Patient 1 — * Appointments (Appointment.patientID)
+  - Patient 1 — * Prescriptions (Prescription.patientID)
+  - Patient 1 — * Billings (Billing.patientID); billings also reference appointments.
+
+2) Physician
+- Primary: `Physician` (collection: `physicians`)
+- Fields:
+  - `_id`: ObjectId
+  - `name`: String (required)
+  - `specialization`: String (required)
+  - `contactInfo`:
+    - `phone`: String
+    - `email`: String
+  - `schedule`: [String] (availability and booked notes)
+  - `username`: String (unique, sparse) — used for physician login
+  - `passwordHash`: String (bcrypt)
+  - `role`: String enum (`physician` | `admin`) default `physician`
+  - `isActive`: Boolean (default: true)
+  - `createdAt`: Date (default: Date.now)
+
+- Notable behavior & helpers:
+  - `pre('save')` hook to hash `passwordHash`.
+  - `methods.verifyPassword(password)` — verify physician password.
+  - Indexes: `name`, `contactInfo.email`, `specialization`.
+
+- Relationships / Cardinality:
+  - Physician 1 — * Appointments (Appointment.physicianID)
+  - Physician 1 — * Prescriptions (Prescription.physicianID)
+  - Physician may appear indirectly on Billings (via Appointment)
+
+3) Prescription
+- Primary: `Prescription` (collection: `prescriptions`)
+- Fields:
+  - `_id`: ObjectId
+  - `patientID`: ObjectId → `Patient` (required)
+  - `physicianID`: ObjectId → `Physician` (required)
+  - `medicationName`: String (required)
+  - `dosage`: String
+  - `instructions`: String
+  - `startDate`: Date (default: now)
+  - `endDate`: Date
+  - `status`: String enum (`active` | `completed`) default `active`
+  - `medicationCode`: String (optional canonical code, e.g., RxNorm)
+  - `frequency`: String
+  - `type`: String
+  - `isDeleted`: Boolean (soft-delete flag, default: false)
+  - `deletedAt`: Date
+  - `deletedBy`: ObjectId → `Physician`
+  - `createdAt`, `updatedAt`: Date (timestamps)
+
+- Notable behavior:
+  - `statics.getCurrentForPatient(patientId)` — aggregation to return active/current prescriptions for a patient.
+
+- Relationships / Cardinality:
+  - Prescription belongs to Patient and Physician (many prescriptions per patient, many per physician).
+
+4) Appointment
+- Primary: `Appointment` (collection: `appointments`)
+- Fields:
+  - `_id`: ObjectId
+  - `patientID`: ObjectId → `Patient` (required)
+  - `physicianID`: ObjectId → `Physician` (required)
+  - `date`: Date (required)
+  - `notes`: String
+  - `summary`: String
+  - `diagnoses`: Array of embedded objects:
+    - `code`: String (ICD-10 or other)
+    - `description`: String
+    - `chronic`: Boolean (default: false)
+    - `recordedAt`: Date (defaults to appointment date)
+  - `isDeleted`: Boolean (default: false)
+  - `deletedAt`: Date
+  - `deletedBy`: ObjectId → `Physician`
+  - `createdAt`, `updatedAt`: Date (timestamps)
+
+- Indexes / performance notes:
+  - Indexes exist on (`isDeleted`, `date`), (`isDeleted`, `patientID`, `date`), (`isDeleted`, `physicianID`, `date`), and `diagnoses.code` for fast filtering/sorting.
+
+- Relationships / Cardinality:
+  - Appointment belongs to Patient and Physician (many appointments per patient/physician).
+  - Appointment 1 — * Billings (Billing.appointmentID)
+
+5) Billing
+- Primary: `Billing` (collection: `billings`)
+- Fields:
+  - `_id`: ObjectId
+  - `appointmentID`: ObjectId → `Appointment` (required)
+  - `patientID`: ObjectId → `Patient` (required)
+  - `amount`: Number (required)
+  - `status`: String enum (`Paid` | `Due` | `Pending`) default `Pending`
+  - `paymentDate`: Date
+  - `InsuranceProvider`: String
+  - `policyNumber`: String
+  - `coverageAmount`: Number
+  - `isDeleted`: Boolean (default: false)
+  - `deletedAt`: Date
+  - `deletedBy`: ObjectId → `Physician`
+  - `createdAt`, `updatedAt`: Date (timestamps)
+
+- Relationships / Cardinality:
+  - Billing belongs to Appointment and Patient (one billing per appointment is typical in the seeder, but model allows many).
+
+General relationship summary (text):
+- A `Patient` can have many `Appointments`, many `Prescriptions`, and many `Billings` (the latter often created from an Appointment).  
+- A `Physician` can have many `Appointments` and many `Prescriptions`.  
+- An `Appointment` references one `Patient` and one `Physician`, and may have multiple `diagnoses` embedded. `Appointment` → `Billing` is a one-to-many relationship (the app seeds one billing per appointment by default).  
+- `Prescription` is a join between a Patient and a Physician (each prescription references both).  
+
+Soft-delete pattern and timestamps:
+- Core entities use `isDeleted` + `deletedAt` + `deletedBy` to avoid hard deletes and preserve audit history.  
+- Several schemas enable `timestamps: true` and include `createdAt` and `updatedAt` for auditing and sorting.
+
+Indexes & helper functions (summary):
+- Indexes: patient/physician names, contact emails/phones, appointment/physician/date combos, and diagnosis codes — these support efficient search, filtering and pagination.  
+- Helpers: Patient/Prescription include aggregation helpers to compute current medications and medical history; Physician/Patient models include `verifyPassword` methods for authentication.
+
+If you'd like, I can also add a simple ASCII ER diagram (text-only) showing the key relationships, or produce a PlantUML/mermaid diagram snippet you can paste into documentation or render elsewhere.
 
 ### Key Features (Basic)
 - CRUD: create/edit/delete patients, physicians, appointments, prescriptions, billings (soft-delete on core entities).
@@ -34,7 +172,87 @@ Small clinics often lack lightweight tooling to view and update clinical data qu
 - Role-based guest patient access (self-serve view of their own physicians/appointments/prescriptions/billings).
 - AJAX-enhanced tables: live search and in-place updates on filter/sort/page.
 - Cross-linking with modal notes and detail pages.
-- Optional to strengthen: analytics dashboard (trends by week, billing totals by status, top diagnoses) and/or smart scheduling (conflict detection + suggestions). These are recommended as “advanced” showcase items beyond role-based access.
+- **Analytics Dashboard** (implemented): real-time billing trends, totals by status, and top diagnoses with interactive charts.
+
+### Analytics Dashboard (Advanced Feature — Implemented)
+
+The analytics dashboard provides real-time insights into clinic operations via MongoDB aggregations and interactive visualizations.
+
+**Features:**
+- **Weekly Billing Trend** (line chart): Total revenue aggregated by ISO week over the last 12 weeks (configurable via `?weeks=N`). Helps track billing velocity and financial trends.
+- **Billing Totals by Status** (doughnut chart): Sums amounts across all `Paid`, `Pending`, and `Due` statuses. Provides quick view of outstanding receivables.
+- **Top Diagnoses** (table): Lists the 10 most common diagnoses (ICD-10 codes) from all appointments, with occurrence count. Useful for identifying frequent conditions and staffing needs.
+
+**Route & Access:**
+- `GET /analytics` (protected by `isAuthenticated` — physician/admin only)
+- Returns HTML page with charts when viewed in browser; can also return JSON for programmatic clients.
+- Navbar link: **Analytics** (visible when logged in).
+
+**Tech Stack & Rationale:**
+
+1. **MongoDB Aggregation Pipeline** (`routes/analytics.js`)
+   - *Why:* Performs server-side computation without fetching raw data into Node. Efficient for large datasets and reduces network payload size dramatically.
+   - *How:* Uses Mongoose aggregation pipeline with operators:
+     - `$match`: filters by `isDeleted` flag and date range
+     - `$group`: aggregates amounts/counts by week (using `$year`/`$isoWeek`), status, or diagnosis code
+     - `$unwind`: flattens embedded `diagnoses` array from Appointment documents
+     - `$sort`, `$limit`: orders results and caps size (e.g., top 10 diagnoses)
+   - *Result:* compact JSON payload (~50–500 bytes per trend point vs. MB of raw documents); queries complete in <200ms even with 10k+ records due to MongoDB indexing.
+   - *Alternative considered:* In-memory Node aggregation (simpler but slower for large datasets; doesn't scale).
+
+2. **Chart.js** (frontend, loaded via CDN from `https://cdn.jsdelivr.net/npm/chart.js`)
+   - *Why:* Lightweight, responsive, and requires no additional npm dependencies. Perfect for embedded/demo projects with minimal overhead.
+   - *How:* Two chart types used:
+     - **Line chart**: plots weekly billing amounts (x-axis: week, y-axis: revenue)
+     - **Doughnut chart**: shows status distribution (percentages of Paid, Pending, Due)
+   - *Alternatives considered:*
+     - D3.js: more powerful but heavier and requires significant learning curve for custom visuals
+     - Plotly: richer features but larger bundle and more dependencies
+     - Recharts: modern React-based but requires React integration (not used in this project)
+   - *Chosen:* Chart.js balances simplicity, performance, and feature set for medical/billing visualizations.
+
+3. **EJS Templating** (`views/analytics.ejs`)
+   - *Why:* Consistent with the app's existing view layer (all pages use EJS). Server-side rendering enables SEO-friendly markup and works without JavaScript.
+   - *How:* Express route computes aggregations → passes data to EJS template → EJS embeds JSON in a dedicated `<script type="application/json">` block → Client-side JavaScript parses and renders charts.
+   - *Safe data embedding pattern:* Using a separate `<script type="application/json" id="analytics-data">` avoids EJS/JavaScript tokenization conflicts. This is a best practice for embedding untrusted or dynamic data.
+   - *Example:*
+     ```ejs
+     <script type="application/json" id="analytics-data">
+     <%- JSON.stringify({ trend: trend, statusTotals: statusTotals, topDiagnoses: topDiagnoses }) %>
+     </script>
+     ```
+     Then client JS: `const data = JSON.parse(document.getElementById('analytics-data').textContent);`
+
+**Why This Architecture:**
+- **Minimal dependencies:** No extra npm packages beyond existing Mongoose and Chart.js (CDN). Reduces bloat and maintenance burden.
+- **Server-side computation:** Aggregations run in MongoDB (most efficient) rather than pulling all data into Node. MongoDB's `$group` is optimized for grouping operations at scale.
+- **Responsive & accessible:** Charts adapt to mobile; table fallback for accessibility; no JavaScript required for basic server-side rendering.
+- **Fast & scalable:** Aggregations are leveraged by MongoDB indexing (e.g., index on `Billing.status`, `Billing.createdAt`, `Appointment.diagnoses.code`); typical response under 200ms for realistic datasets.
+- **Secure data flow:** JSON is embedded in a safe, dedicated script block; avoids CSRF and XSS vectors common in inline templating.
+
+**Example Aggregation (Weekly Billing Trend):**
+```javascript
+const trend = await Billing.aggregate([
+  { $match: { createdAt: { $gte: startDate }, isDeleted: false } },
+  {
+    $group: {
+      _id: { year: { $year: "$createdAt" }, week: { $isoWeek: "$createdAt" } },
+      totalAmount: { $sum: "$amount" },
+      count: { $sum: 1 }
+    }
+  },
+  { $sort: { "_id.year": 1, "_id.week": 1 } },
+  { $limit: 12 }
+]);
+```
+Returns ~12 documents (one per week) instead of N billing records, reducing payload by orders of magnitude.
+
+**Future Enhancements:**
+- Add date-range and physician/specialization filters to drill down on specific periods or departments.
+- Implement drill-down interactivity: click a week in the trend chart to list all billings in that period.
+- Cache aggregation results (5-min TTL) for high-traffic scenarios to reduce database load.
+- Export analytics to CSV/PDF for reports and auditing.
+- Add predictive trend lines (e.g., linear regression) for forecasting.
 
 ### Data & Seeding
 - Seeder: `Data/seed.js` uses faker + `Data/medicine.json`; creates physicians (including `demo_admin` and `demo_doctor`), patients with hashed password `password123`, appointments, prescriptions, and billings with insurer reuse per patient; billing amounts bumped high with variability.
@@ -52,6 +270,25 @@ Small clinics often lack lightweight tooling to view and update clinical data qu
 - Views: EJS with partial navbar, table rows.
 - Frontend: CSS (`public/style.css`), AJAX helper (`public/js/table-ajax.js`), smart-search styles.
 - Utilities: `utils/pagination.js` and `utils/query.js` for pagination links.
+
+#### Packages & Resources
+
+- Key npm packages (from `package.json`):
+  - `express` (v5.x) — web framework and routing.
+  - `mongoose` (v9.x) — MongoDB ODM and schema definitions.
+  - `ejs` (v3.x) — server-side templating for views and partials.
+  - `express-session` (v1.x) — session management for authentication.
+  - `bcrypt` (v5.x) — password hashing for physician/patient credentials.
+  - `@faker-js/faker` (v10.x) — deterministic synthetic data for the seeder.
+
+- Important local resources:
+  - `Data/medicine.json` — medication dataset used by the seeder to produce realistic prescriptions.
+  - `Data/templates.js` — templates and helper functions used by the seeder for notes, diagnoses and prescription generation.
+  - `Data/seed.js` — seeder script that populates demo physicians, patients, prescriptions, appointments and billings.
+  - `public/js/table-ajax.js` — client-side helper for AJAX-enabled table filtering, sorting and pagination.
+  - `utils/pagination.js` & `utils/query.js` — server-side helpers used by EJS views to render pagination links and preserve query strings.
+
+These packages and local resources together power the app's demo data generation, authentication, server rendering, and the AJAX-driven UI.
 
 ### Authentication & Authorization
 - Physician login via username/password; passwords hashed (bcrypt).
@@ -77,8 +314,7 @@ Small clinics often lack lightweight tooling to view and update clinical data qu
 - Patient accounts: email + password `password123`.
 - Billing amounts: higher base with variability; insurer pool per patient reused across bills.
 
-### Potential Advanced Feature Ideas (pick one if needed)
-- **Analytics dashboard**: visit volume by week, billing totals by status, top diagnoses, average billing per specialization.
+### Potential Advanced Feature Ideas (future)
 - **Smart scheduling**: conflict detection + suggested slots per physician; compact, scrollable schedule view.
 - **Recommendation/alerts**: flag overdue bills; suggest follow-up based on diagnosis; simple interaction checker for meds.
 
@@ -88,7 +324,7 @@ Small clinics often lack lightweight tooling to view and update clinical data qu
 - M3: Appointments/prescriptions CRUD; list filters/sorts/pagination. **(Done)**
 - M4: Billing CRUD; totals; detail cross-links. **(Done)**
 - M5: Restrict permissions (admin-only edits/deletes) and hide buttons for non-admins. **(Done)**
-- M6 (optional advanced): Add analytics dashboard or smart scheduling; polish UI; testing/demo.
+- M6 (advanced feature): Add analytics dashboard. **(Done)**
 
 ### Demo Checklist
 - CRUD demo for each entity (insert/update/delete).

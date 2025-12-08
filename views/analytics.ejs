@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Analytics - Medical DB</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .full { grid-column: 1 / -1; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1 class="logo">🏥 Medical DB</h1>
+      <ul class="nav-links">
+        <li><a href="/patients">Patients</a></li>
+        <li><a href="/physicians">Physicians</a></li>
+        <li><a href="/prescriptions">Prescriptions</a></li>
+        <li><a href="/appointments">Appointments</a></li>
+        <li><a href="/billings">Billings</a></li>
+        <li><a href="/analytics" class="active">Analytics</a></li>
+        <li><a href="/logout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <h2>Analytics</h2>
+      <p>Quick insights: billing trends, totals by status, and top diagnoses.</p>
+    </div>
+
+    <div class="grid">
+      <div class="panel full">
+        <h3>Billing Trend (last <%= weeks %> weeks)</h3>
+        <canvas id="trendChart" height="100"></canvas>
+      </div>
+
+      <div class="panel">
+        <h3>Billing Totals by Status</h3>
+        <canvas id="statusChart" height="200"></canvas>
+      </div>
+
+      <div class="panel">
+        <h3>Top Diagnoses</h3>
+        <table style="width:100%; border-collapse: collapse;">
+          <thead>
+            <tr><th style="text-align:left">Code</th><th style="text-align:left">Description</th><th style="text-align:right">Count</th></tr>
+          </thead>
+          <tbody>
+            <% topDiagnoses.forEach(function(d){ %>
+              <tr>
+                <td><%= d._id.code %></td>
+                <td><%= d._id.description || '—' %></td>
+                <td style="text-align:right"><%= d.count %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Embed analytics JSON safely to avoid template/JS parsing issues -->
+  <script id="analytics-data" type="application/json"><%- JSON.stringify({ trend, totalsByStatus, topDiagnoses }) %></script>
+
+  <script>
+    (function(){
+      const payload = JSON.parse(document.getElementById('analytics-data').textContent || '{}');
+      const rawTrend = payload.trend || [];
+      const totals = payload.totalsByStatus || [];
+
+      // Build trend chart data
+      const labels = rawTrend.map(t => `${t._id.year}-W${String(t._id.week).padStart(2,'0')}`);
+      const data = rawTrend.map(t => t.totalAmount);
+
+      const trendCtx = document.getElementById('trendChart').getContext('2d');
+      new Chart(trendCtx, {
+        type: 'line',
+        data: { labels, datasets: [{ label: 'Total billed', data, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.08)', fill:true }] },
+        options: { responsive:true, plugins: { legend:{ display:false } } }
+      });
+
+      // Totals by status
+      const statusLabels = totals.map(t => t._id);
+      const statusData = totals.map(t => t.totalAmount);
+      const colors = ['#10b981','#f59e0b','#ef4444'];
+      const statusCtx = document.getElementById('statusChart').getContext('2d');
+      new Chart(statusCtx, {
+        type: 'doughnut',
+        data: { labels: statusLabels, datasets:[{ data: statusData, backgroundColor: colors.slice(0, statusLabels.length) }] },
+        options: { responsive:true }
+      });
+    })();
+  </script>
+
+</body>
+</html>

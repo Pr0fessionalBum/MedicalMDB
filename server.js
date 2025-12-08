@@ -15,6 +15,7 @@ import prescriptionRoutes from "./routes/prescriptions.js";
 import appointmentRoutes from "./routes/appointments.js";
 import billingRoutes from "./routes/billings.js";
 import searchRoutes from "./routes/search.js";
+import analyticsRoutes from "./routes/analytics.js";
 
 // Express config
 const app = express();
@@ -54,6 +55,7 @@ app.use("/physicians", isAuthenticated, physicianRoutes);
 app.use("/prescriptions", isAuthenticated, prescriptionRoutes);
 app.use("/appointments", isAuthenticated, appointmentRoutes);
 app.use("/billings", isAuthenticated, billingRoutes);
+app.use("/analytics", isAuthenticated, analyticsRoutes);
 
 // Search API
 app.use("/api", isAuthenticated, searchRoutes);
