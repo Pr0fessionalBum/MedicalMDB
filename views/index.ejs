@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medical Database Management</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1 class="logo">🏥 Medical DB</h1>
+      <ul class="nav-links">
+        <li><a href="/patients">Patients</a></li>
+        <li><a href="/physicians">Physicians</a></li>
+        <li><a href="/prescriptions">Prescriptions</a></li>
+        <li><a href="/appointments">Appointments</a></li>
+        <li><a href="/billings">Billings</a></li>
+        <% if (user) { %>
+          <li><a href="/logout">Logout</a></li>
+        <% } %>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="hero">
+      <h2>Welcome to Medical Database Management</h2>
+      <p>Manage and view patient records, prescriptions, appointments, and billings.</p>
+      <div class="button-group">
+        <a href="/patients" class="btn btn-primary">View Patients</a>
+        <a href="/physicians" class="btn btn-secondary">View Physicians</a>
+        <a href="/appointments" class="btn btn-secondary">View Appointments</a>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>Quick Links</h3>
+        <ul>
+          <li><a href="/patients">👥 Patients Database</a></li>
+          <li><a href="/physicians">👨‍⚕️ Physician Directory</a></li>
+          <li><a href="/prescriptions">💊 Prescriptions</a></li>
+          <li><a href="/appointments">📅 Appointments</a></li>
+          <li><a href="/billings">💰 Billing Records</a></li>
+        </ul>
+      </div>
+      <div class="stat-card">
+        <h3>Features</h3>
+        <ul>
+          <li>✓ Search across records</li>
+          <li>✓ Sort by multiple fields</li>
+          <li>✓ View detailed patient records</li>
+          <li>✓ Manage appointments & prescriptions</li>
+          <li>✓ Track billing status</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 Medical Database Management System</p>
+  </footer>
+</body>
+</html>

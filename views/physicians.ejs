@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Physicians - Medical DB</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/smart-search.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1 class="logo">🏥 Medical DB</h1>
+      <ul class="nav-links">
+        <li><a href="/patients">Patients</a></li>
+        <li><a href="/physicians" class="active">Physicians</a></li>
+        <li><a href="/prescriptions">Prescriptions</a></li>
+        <li><a href="/appointments">Appointments</a></li>
+        <li><a href="/billings">Billings</a></li>
+        <li><a href="/logout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <h2>Physicians</h2>
+      <a href="/" class="btn btn-secondary">Back Home</a>
+    </div>
+
+    <!-- Main Search & Filter Bar -->
+    <div class="filter-section">
+      <form method="GET" id="filter-form" class="filter-form">
+        <div class="filter-group">
+          <div class="filter-field">
+            <label for="search-filter">Search</label>
+            <input 
+              type="text" 
+              id="search-filter"
+              name="search"
+              placeholder="Name, specialization, email, phone..."
+              value="<%= search %>"
+              autocomplete="off"
+            >
+          </div>
+          <div class="filter-field">
+            <label for="spec-filter">Specialization</label>
+            <select id="spec-filter" name="specialization">
+              <option value="">All</option>
+              <% allSpecs.forEach(spec => { %>
+                <option value="<%= spec %>" <%= specialization === spec ? 'selected' : '' %>><%= spec %></option>
+              <% }); %>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label for="sort-filter">Sort By</label>
+            <select id="sort-filter" name="sort">
+              <option value="name" <%= sort === 'name' ? 'selected' : '' %>>Name (A-Z)</option>
+              <option value="specialization" <%= sort === 'specialization' ? 'selected' : '' %>>Specialization</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-actions">
+          <button type="submit" class="btn-apply">Apply Filters</button>
+          <button type="reset" class="btn-reset" onclick="window.location.href='/physicians'">Reset</button>
+        </div>
+      </form>
+    </div>
+
+    <% if (physicians.length === 0) { %>
+      <div class="no-data">
+        <p>No physicians found.</p>
+      </div>
+    <% } else { %>
+      <div class="table-wrapper" id="physicians-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Specialization</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="physicians-table-body">
+            <% physicians.forEach(physician => { %>
+              <tr>
+                <td><strong><%= physician.name %></strong></td>
+                <td><%= physician.specialization %></td>
+                <td><%= physician.contactInfo?.email || 'N/A' %></td>
+                <td><%= physician.contactInfo?.phone || 'N/A' %></td>
+                <td>
+                  <button class="btn btn-small" onclick="showSchedule(event)">View Schedule</button>
+                  <input type="hidden" class="schedule-data" value="<%= physician.name %>" data-schedule="<%= JSON.stringify(physician.schedule || []).replace(/"/g, '&quot;') %>">
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination-controls">
+        <% if (totalPages > 1) { %>
+          <%- renderPagination(page, totalPages) %>
+        <% } %>
+      </div>
+      <p class="record-count">Showing <%= physicians.length %> of <%= totalCount %> physician<%= totalCount !== 1 ? 's' : '' %></p>
+      <!-- Per-page dropdown at bottom (only one instance) -->
+      <div class="perpage-controls" style="margin-top:8px; text-align:right; font-size:12px;">
+        <label for="page-size" style="margin-right:4px;">Per page:</label>
+        <select id="page-size" name="limit" style="font-size:12px; padding:2px 6px;" onchange="window.location.href='/physicians?<%= paginationQuery(page) %>&limit='+this.value">
+          <option value="10" <%= limit == 10 ? 'selected' : '' %>>10</option>
+          <option value="25" <%= limit == 25 ? 'selected' : '' %>>25</option>
+          <option value="50" <%= limit == 50 ? 'selected' : '' %>>50</option>
+          <option value="100" <%= limit == 100 ? 'selected' : '' %>>100</option>
+        </select>
+      </div>
+    <% } %>
+  </div>
+
+  <div id="scheduleModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">×</span>
+      <h3 id="physicianName"></h3>
+      <div id="scheduleList"></div>
+    </div>
+  </div>
+
+  <script>
+    // Live AJAX search/filter
+    const filterForm = document.getElementById('filter-form');
+    const tableBody = document.getElementById('physicians-table-body');
+    const tableWrapper = document.getElementById('physicians-table-wrapper');
+    let ajaxTimeout;
+    filterForm.addEventListener('input', function(e) {
+      clearTimeout(ajaxTimeout);
+      ajaxTimeout = setTimeout(() => {
+        const params = new URLSearchParams(new FormData(filterForm)).toString();
+        fetch(`/physicians?${params}&ajax=1`)
+          .then(res => res.json())
+          .then(data => {
+            tableBody.innerHTML = data.rowsHtml;
+            document.querySelector('.record-count').textContent = `Showing ${data.count} of ${data.totalCount} physicians`;
+            if (data.paginationHtml) {
+              document.querySelector('.pagination-controls').innerHTML = data.paginationHtml;
+            }
+          });
+      }, 300);
+    });
+
+    function showSchedule(event) {
+      const btn = event.target;
+      const hidden = btn.parentElement.querySelector('.schedule-data');
+      const name = hidden.value;
+      const scheduleJson = hidden.getAttribute('data-schedule');
+      const scheduleArray = JSON.parse(scheduleJson.replace(/&quot;/g, '"'));
+      
+      document.getElementById('physicianName').textContent = name + ' - Schedule';
+      const html = scheduleArray.map(s => '<li>' + s + '</li>').join('');
+      document.getElementById('scheduleList').innerHTML = '<ul>' + html + '</ul>';
+      document.getElementById('scheduleModal').style.display = 'block';
+    }
+
+    function closeModal() {
+      document.getElementById('scheduleModal').style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+      const modal = document.getElementById('scheduleModal');
+      if (event.target === modal) {
+        modal.style.display = 'none';
+      }
+    }
+  </script>
+
+  <footer>
+    <p>&copy; 2025 Medical Database Management System</p>
+  </footer>
+</body>
+</html>

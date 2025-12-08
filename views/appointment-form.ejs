@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Appointment - Medical DB</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .form-container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      max-width: 600px;
+    }
+
+    .form { display: flex; flex-direction: column; }
+    .form-group { display: flex; flex-direction: column; margin-bottom: 15px; }
+    .form-group label { font-weight: 600; margin-bottom: 8px; color: #1e293b; }
+    .form-group input, .form-group select, .form-group textarea { padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+    .form-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .form-actions .btn { flex: 1; text-align: center; }
+    .form-divider { font-size: 14px; font-weight: 700; color: #2563eb; margin-top: 20px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e2e8f0; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1 class="logo">🏥 Medical DB</h1>
+      <ul class="nav-links">
+        <li><a href="/patients">Patients</a></li>
+        <li><a href="/physicians">Physicians</a></li>
+        <li><a href="/prescriptions">Prescriptions</a></li>
+        <li><a href="/appointments" class="active">Appointments</a></li>
+        <li><a href="/billings">Billings</a></li>
+        <li><a href="/logout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <h2>Add New Appointment</h2>
+      <a href="/appointments" class="btn btn-secondary">Back to Appointments</a>
+    </div>
+
+    <div class="form-container">
+      <form method="POST" action="/appointments" class="form">
+        <div class="form-group">
+          <label for="patientID">Patient *</label>
+          <select id="patientID" name="patientID" required>
+            <option value="">Select a Patient</option>
+            <% patients.forEach(p => { %>
+              <option value="<%= p._id %>"><%= p.name %></option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="physicianID">Physician *</label>
+          <select id="physicianID" name="physicianID" required>
+            <option value="">Select a Physician</option>
+            <% physicians.forEach(p => { %>
+              <option value="<%= p._id %>"><%= p.name %></option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="date">Appointment Date *</label>
+          <input type="date" id="date" name="date" required>
+        </div>
+
+        <div class="form-group">
+          <label for="summary">Summary *</label>
+          <input type="text" id="summary" name="summary" required placeholder="e.g., Follow-up visit">
+        </div>
+
+        <div class="form-group">
+          <label for="notes">Clinical Notes</label>
+          <textarea id="notes" name="notes" rows="5" placeholder="Detailed clinical notes..."></textarea>
+        </div>
+
+        <div class="form-divider">Diagnoses (Optional)</div>
+
+        <div class="form-group">
+          <label>Add Diagnoses</label>
+          <div id="diagnosesContainer">
+            <button type="button" onclick="addDiagnosis()" class="btn btn-secondary" style="width: auto; margin-bottom: 10px;">+ Add Diagnosis</button>
+          </div>
+          <input type="hidden" id="diagnoses" name="diagnoses" value="[]">
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Add Appointment</button>
+          <a href="/appointments" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function addDiagnosis() {
+      const container = document.getElementById('diagnosesContainer');
+      const id = Date.now();
+      const html = `
+        <div id="diagnosis-${id}" style="background: #f8fafc; padding: 15px; border-radius: 6px; margin-bottom: 10px;">
+          <input type="text" placeholder="Diagnosis code" class="diagnosis-code" style="width: 100%; padding: 8px; margin-bottom: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+          <input type="text" placeholder="Description" class="diagnosis-desc" style="width: 100%; padding: 8px; margin-bottom: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+          <label style="margin-bottom: 8px;">
+            <input type="checkbox" class="diagnosis-chronic"> Chronic
+          </label>
+          <button type="button" onclick="removeDiagnosis('${id}')" class="btn btn-secondary" style="width: auto; font-size: 12px;">Remove</button>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', html);
+    }
+
+    function removeDiagnosis(id) {
+      document.getElementById('diagnosis-' + id).remove();
+    }
+
+    document.querySelector('form').addEventListener('submit', function(e) {
+      const items = document.querySelectorAll('[id^="diagnosis-"]');
+      const diagnoses = Array.from(items).map(item => ({
+        code: item.querySelector('.diagnosis-code').value,
+        description: item.querySelector('.diagnosis-desc').value,
+        chronic: item.querySelector('.diagnosis-chronic').checked
+      })).filter(d => d.code || d.description);
+
+      document.getElementById('diagnoses').value = JSON.stringify(diagnoses);
+    });
+  </script>
+
+  <footer>
+    <p>&copy; 2025 Medical Database Management System</p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patients - Medical DB</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/smart-search.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1 class="logo">🏥 Medical DB</h1>
+      <ul class="nav-links">
+        <li><a href="/patients" class="active">Patients</a></li>
+        <li><a href="/physicians">Physicians</a></li>
+        <li><a href="/prescriptions">Prescriptions</a></li>
+        <li><a href="/appointments">Appointments</a></li>
+        <li><a href="/billings">Billings</a></li>
+        <li><a href="/logout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <h2>Patients</h2>
+      <div>
+        <a href="/patients/create" class="btn btn-primary">+ Add Patient</a>
+        <a href="/" class="btn btn-secondary">Back Home</a>
+      </div>
+    </div>
+
+    <!-- Main Search & Filter Bar -->
+    <div class="filter-section">
+      <form method="GET" id="filter-form" class="filter-form">
+        <div class="filter-group">
+          <div class="filter-field">
+            <label for="search-filter">Search</label>
+            <input 
+              type="text" 
+              id="search-filter"
+              name="search"
+              placeholder="Name, email, phone..."
+              value="<%= search %>"
+              autocomplete="off"
+            >
+          </div>
+          <div class="filter-field">
+            <label for="gender-filter">Gender</label>
+            <select id="gender-filter" name="gender">
+              <option value="">All</option>
+              <option value="male" <%= gender === 'male' ? 'selected' : '' %>>Male</option>
+              <option value="female" <%= gender === 'female' ? 'selected' : '' %>>Female</option>
+              <option value="other" <%= gender === 'other' ? 'selected' : '' %>>Other</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label for="age-min">Age Min</label>
+            <input 
+              type="number"
+              id="age-min"
+              name="ageMin"
+              placeholder="18"
+              value="<%= ageMin %>"
+              min="0"
+              max="150"
+            >
+          </div>
+          <div class="filter-field">
+            <label for="age-max">Age Max</label>
+            <input 
+              type="number"
+              id="age-max"
+              name="ageMax"
+              placeholder="80"
+              value="<%= ageMax %>"
+              min="0"
+              max="150"
+            >
+          </div>
+          <div class="filter-field">
+            <label for="sort-filter">Sort By</label>
+            <select id="sort-filter" name="sort">
+              <option value="name" <%= sort === 'name' ? 'selected' : '' %>>Name (A-Z)</option>
+              <option value="dob" <%= sort === 'dob' ? 'selected' : '' %>>Date of Birth (Newest)</option>
+              <option value="age" <%= sort === 'age' ? 'selected' : '' %>>Age (Oldest First)</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label for="page-size">Results Per Page</label>
+            <select id="page-size" name="limit">
+              <option value="10" <%= limit == 10 ? 'selected' : '' %>>10</option>
+              <option value="25" <%= limit == 25 ? 'selected' : '' %>>25</option>
+              <option value="50" <%= limit == 50 ? 'selected' : '' %>>50</option>
+              <option value="100" <%= limit == 100 ? 'selected' : '' %>>100</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-actions">
+          <button type="submit" class="btn-apply">Apply Filters</button>
+          <button type="reset" class="btn-reset" onclick="window.location.href='/patients'">Reset</button>
+        </div>
+      </form>
+    </div>
+
+    <% if (patients.length === 0) { %>
+      <div class="no-data">
+        <p>No patients found. <%= search ? 'Try a different search term.' : 'Start by adding a new patient.' %></p>
+      </div>
+    <% } else { %>
+      <div class="table-wrapper" id="patients-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>DOB</th>
+              <th>Age</th>
+              <th>Gender</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="patients-table-body">
+            <% patients.forEach(patient => { %>
+              <tr>
+                <td><strong><%= patient.name %></strong></td>
+                <td><%= new Date(patient.dob).toLocaleDateString() %></td>
+                <td><%= patient.age %></td>
+                <td><%= patient.gender %></td>
+                <td><%= patient.contactInfo?.email || 'N/A' %></td>
+                <td><%= patient.contactInfo?.phone || 'N/A' %></td>
+                <td>
+                  <a href="/patients/<%= patient._id %>" class="btn btn-small">View</a>
+                  <a href="/patients/<%= patient._id %>/edit" class="btn btn-small">Edit</a>
+                  <form method="POST" action="/patients/<%= patient._id %>/delete" style="display:inline; margin: 0;">
+                    <button type="submit" class="btn btn-small" style="background-color: #dc2626;" onclick="return confirm('Are you sure? This soft-deletes the patient.')">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination-controls">
+        <% if (totalPages > 1) { %>
+          <%- include("partials/pagination", {
+            current: page,
+            totalPages: totalPages,
+            route: "/patients",
+            query: query
+          }) %>
+        <% } %>
+      </div>
+      <p class="record-count">Showing <%= patients.length %> of <%= totalCount %> patient<%= totalCount !== 1 ? 's' : '' %></p>
+      <!-- Per-page dropdown at bottom (only one instance) -->
+      <div class="perpage-controls" style="margin-top:8px; text-align:right; font-size:12px;">
+        <label for="page-size" style="margin-right:4px;">Per page:</label>
+        <select id="page-size" name="limit" style="font-size:12px; padding:2px 6px;" onchange="window.location.href='/patients?<%= paginationQuery(page) %>&limit='+this.value">
+          <option value="10" <%= limit == 10 ? 'selected' : '' %>>10</option>
+          <option value="25" <%= limit == 25 ? 'selected' : '' %>>25</option>
+          <option value="50" <%= limit == 50 ? 'selected' : '' %>>50</option>
+          <option value="100" <%= limit == 100 ? 'selected' : '' %>>100</option>
+        </select>
+      </div>
+    <% } %>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 Medical Database Management System</p>
+  </footer>
+
+  <script>
+    // Live AJAX search/filter
+    const filterForm = document.getElementById('filter-form');
+    const tableBody = document.getElementById('patients-table-body');
+    const tableWrapper = document.getElementById('patients-table-wrapper');
+    let ajaxTimeout;
+    filterForm.addEventListener('input', function(e) {
+      clearTimeout(ajaxTimeout);
+      ajaxTimeout = setTimeout(() => {
+        const params = new URLSearchParams(new FormData(filterForm)).toString();
+        fetch(`/patients?${params}&ajax=1`)
+          .then(res => res.json())
+          .then(data => {
+            tableBody.innerHTML = data.rowsHtml;
+            document.querySelector('.record-count').textContent = `Showing ${data.count} of ${data.totalCount} patients`;
+            if (data.paginationHtml) {
+              document.querySelector('.pagination-controls').innerHTML = data.paginationHtml;
+            }
+          });
+      }, 300);
+    });
+  </script>
+</body>
+</html>

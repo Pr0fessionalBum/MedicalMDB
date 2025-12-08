@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Billings - Medical DB</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1 class="logo">🏥 Medical DB</h1>
+      <ul class="nav-links">
+        <li><a href="/patients">Patients</a></li>
+        <li><a href="/physicians">Physicians</a></li>
+        <li><a href="/prescriptions">Prescriptions</a></li>
+        <li><a href="/appointments">Appointments</a></li>
+        <li><a href="/billings" class="active">Billings</a></li>
+        <li><a href="/logout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <h2>Billing Records</h2>
+      <a href="/" class="btn btn-secondary">Back Home</a>
+    </div>
+
+    <div class="controls">
+      <form method="GET" class="search-form">
+        <input 
+          type="text" 
+          name="search" 
+          placeholder="Search by status..." 
+          value="<%= search %>" 
+          class="search-input"
+        >
+        <select name="sort" class="sort-select" onchange="this.form.submit()">
+          <option value="status" <%= sort === 'status' ? 'selected' : '' %>>Sort by Status</option>
+          <option value="amount" <%= sort === 'amount' ? 'selected' : '' %>>Sort by Amount (High to Low)</option>
+          <option value="date" <%= sort === 'date' ? 'selected' : '' %>>Sort by Created Date</option>
+        </select>
+        <button type="submit" class="btn btn-primary">Search</button>
+      </form>
+    </div>
+
+    <% if (billings.length === 0) { %>
+      <div class="no-data">
+        <p>No billing records found.</p>
+      </div>
+    <% } else { %>
+      <div class="stats-row">
+        <div class="stat-box">
+          <h4>Total Amount</h4>
+          <p class="stat-value">$<%= (totals && totals.totalAmount ? totals.totalAmount : billings.reduce((sum, b) => sum + (b.amount || 0), 0)).toLocaleString() %></p>
+        </div>
+        <div class="stat-box">
+          <h4>Total Paid</h4>
+          <p class="stat-value">$<%= (totals && totals.totalPaid ? totals.totalPaid : billings.filter(b => b.status === 'Paid').reduce((s,b) => s + (b.amount||0), 0)).toLocaleString() %></p>
+        </div>
+        <div class="stat-box">
+          <h4>Total Pending</h4>
+          <p class="stat-value">$<%= (totals && totals.totalPending ? totals.totalPending : billings.filter(b => b.status === 'Pending').reduce((s,b) => s + (b.amount||0), 0)).toLocaleString() %></p>
+        </div>
+        <div class="stat-box">
+          <h4>Total Due</h4>
+          <p class="stat-value">$<%= (totals && totals.totalDue ? totals.totalDue : billings.filter(b => b.status === 'Due').reduce((s,b) => s + (b.amount||0), 0)).toLocaleString() %></p>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Patient</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Payment Date</th>
+              <th>Insurance Provider</th>
+              <th>Coverage</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% billings.forEach(bill => { %>
+              <tr>
+                <td><a href="/patients/<%= bill.patientID._id %>"><%= bill.patientID.name %></a></td>
+                <td><strong>$<%= bill.amount %></strong></td>
+                <td><span class="badge badge-<%= bill.status %>"><%= bill.status %></span></td>
+                <td><%= new Date(bill.createdAt).toLocaleDateString() %></td>
+                <td><%= bill.paymentDate ? new Date(bill.paymentDate).toLocaleDateString() : 'N/A' %></td>
+                <td><%= bill.InsuranceProvider || 'None' %></td>
+                <td>$<%= bill.coverageAmount || 0 %></td>
+                <td>
+                  <form method="POST" action="/billings/<%= bill._id %>/delete" style="display:inline; margin: 0;">
+                    <button type="submit" class="btn btn-small" style="background-color: #dc2626; font-size: 11px;" onclick="return confirm('Delete this billing record?')">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination-controls">
+        <% if (typeof renderPagination === 'function' && totalPages > 1) { %>
+          <%- renderPagination(page, totalPages) %>
+        <% } %>
+      </div>
+      <p class="record-count">Showing <%= billings.length %> of <%= totalCount %> billing record<%= totalCount !== 1 ? 's' : '' %></p>
+      <!-- Per-page dropdown at bottom (only one instance) -->
+      <div class="perpage-controls" style="margin-top:8px; text-align:right; font-size:12px;">
+        <label for="page-size" style="margin-right:4px;">Per page:</label>
+        <select id="page-size" name="limit" style="font-size:12px; padding:2px 6px;" onchange="window.location.href='/billings?<%= paginationQuery(page) %>&limit='+this.value">
+          <option value="10" <%= limit == 10 ? 'selected' : '' %>>10</option>
+          <option value="25" <%= limit == 25 ? 'selected' : '' %>>25</option>
+          <option value="50" <%= limit == 50 ? 'selected' : '' %>>50</option>
+          <option value="100" <%= limit == 100 ? 'selected' : '' %>>100</option>
+        </select>
+      </div>
+    <% } %>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 Medical Database Management System</p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Appointments - Medical DB</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1 class="logo">🏥 Medical DB</h1>
+      <ul class="nav-links">
+        <li><a href="/patients">Patients</a></li>
+        <li><a href="/physicians">Physicians</a></li>
+        <li><a href="/prescriptions">Prescriptions</a></li>
+        <li><a href="/appointments" class="active">Appointments</a></li>
+        <li><a href="/billings">Billings</a></li>
+        <li><a href="/logout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <h2>Appointments</h2>
+      <div>
+        <a href="/appointments/create" class="btn btn-primary">+ Add Appointment</a>
+        <a href="/" class="btn btn-secondary">Back Home</a>
+      </div>
+    </div>
+
+    <div class="controls">
+      <form method="GET" class="search-form">
+        <input 
+          type="text" 
+          name="search" 
+          placeholder="Search by summary..." 
+          value="<%= search %>" 
+          class="search-input"
+        >
+        <select name="sort" class="sort-select" onchange="this.form.submit()">
+          <option value="date" <%= sort === 'date' ? 'selected' : '' %>>Sort by Date (Newest)</option>
+          <option value="patient" <%= sort === 'patient' ? 'selected' : '' %>>Sort by Patient</option>
+        </select>
+        <button type="submit" class="btn btn-primary">Search</button>
+      </form>
+    </div>
+
+    <% if (appointments.length === 0) { %>
+      <div class="no-data">
+        <p>No appointments found.</p>
+      </div>
+    <% } else { %>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Patient</th>
+              <th>Summary</th>
+              <th>Diagnoses</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% appointments.forEach(appt => { %>
+              <tr>
+                <td><%= new Date(appt.date).toLocaleDateString() %></td>
+                <td><a href="/patients/<%= appt.patientID._id %>"><%= appt.patientID.name %></a></td>
+                <td><%= appt.summary %></td>
+                <td>
+                  <% if (appt.diagnoses && appt.diagnoses.length > 0) { %>
+                    <%= appt.diagnoses.map(d => d.description).join(', ') %>
+                  <% } else { %>
+                    N/A
+                  <% } %>
+                </td>
+                <td>
+                  <button class="btn btn-small" onclick="showNotes('<%= appt._id %>', event)" style="font-size: 11px;">Notes</button>
+                  <textarea class="notes-hidden" style="display:none;"><%= appt.notes %></textarea>
+                </td>
+                <td>
+                  <form method="POST" action="/appointments/<%= appt._id %>/delete" style="display:inline; margin: 0;">
+                    <button type="submit" class="btn btn-small" style="background-color: #dc2626; font-size: 11px;" onclick="return confirm('Delete this appointment?')">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination-controls">
+        <% if (typeof renderPagination === 'function' && totalPages > 1) { %>
+          <%- renderPagination(page, totalPages) %>
+        <% } %>
+      </div>
+      <p class="record-count">Showing <%= appointments.length %> of <%= totalCount %> appointment<%= totalCount !== 1 ? 's' : '' %></p>
+      <!-- Per-page dropdown at bottom (only one instance) -->
+      <div class="perpage-controls" style="margin-top:8px; text-align:right; font-size:12px;">
+        <label for="page-size" style="margin-right:4px;">Per page:</label>
+        <select id="page-size" name="limit" style="font-size:12px; padding:2px 6px;" onchange="window.location.href='/appointments?<%= paginationQuery(page) %>&limit='+this.value">
+          <option value="10" <%= limit == 10 ? 'selected' : '' %>>10</option>
+          <option value="25" <%= limit == 25 ? 'selected' : '' %>>25</option>
+          <option value="50" <%= limit == 50 ? 'selected' : '' %>>50</option>
+          <option value="100" <%= limit == 100 ? 'selected' : '' %>>100</option>
+        </select>
+      </div>
+    <% } %>
+  </div>
+
+  <div id="notesModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">×</span>
+      <h3>Clinical Notes</h3>
+      <div id="notesContent" style="max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-wrap: break-word;"></div>
+    </div>
+  </div>
+
+  <script>
+    function showNotes(appointmentId, event) {
+      const btn = event.target;
+      const textarea = btn.parentElement.querySelector('.notes-hidden');
+      const notes = textarea.value;
+      document.getElementById('notesContent').textContent = notes;
+      document.getElementById('notesModal').style.display = 'block';
+    }
+
+    function closeModal() {
+      document.getElementById('notesModal').style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+      const modal = document.getElementById('notesModal');
+      if (event.target === modal) {
+        modal.style.display = 'none';
+      }
+    }
+  </script>
+
+  <footer>
+    <p>&copy; 2025 Medical Database Management System</p>
+  </footer>
+</body>
+</html>

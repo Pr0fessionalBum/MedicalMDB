@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= patient.name %> - Medical DB</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1 class="logo">🏥 Medical DB</h1>
+      <ul class="nav-links">
+        <li><a href="/patients" class="active">Patients</a></li>
+        <li><a href="/physicians">Physicians</a></li>
+        <li><a href="/prescriptions">Prescriptions</a></li>
+        <li><a href="/appointments">Appointments</a></li>
+        <li><a href="/billings">Billings</a></li>
+        <li><a href="/logout">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <h2><%= patient.name %></h2>
+      <a href="/patients" class="btn btn-secondary">Back to Patients</a>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-section">
+        <h3>Patient Information</h3>
+        <div class="info-card">
+          <div class="info-row">
+            <span class="label">Name:</span>
+            <span class="value"><%= patient.name %></span>
+          </div>
+          <div class="info-row">
+            <span class="label">Date of Birth:</span>
+            <span class="value"><%= new Date(patient.dob).toLocaleDateString() %></span>
+          </div>
+          <div class="info-row">
+            <span class="label">Age:</span>
+            <span class="value"><%= patient.age %> years old</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Gender:</span>
+            <span class="value"><%= patient.gender %></span>
+          </div>
+          <div class="info-row">
+            <span class="label">Email:</span>
+            <span class="value"><%= patient.contactInfo?.email || 'N/A' %></span>
+          </div>
+          <div class="info-row">
+            <span class="label">Phone:</span>
+            <span class="value"><%= patient.contactInfo?.phone || 'N/A' %></span>
+          </div>
+          <div class="info-row">
+            <span class="label">Address:</span>
+            <span class="value"><%= patient.contactInfo?.address || 'N/A' %></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-grid">
+      <div class="section">
+        <h3>Prescriptions (<%= prescriptions.length %>)</h3>
+        <% if (prescriptions.length === 0) { %>
+          <p class="no-data-text">No prescriptions found.</p>
+        <% } else { %>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Medication</th>
+                  <th>Dosage</th>
+                  <th>Frequency</th>
+                  <th>Status</th>
+                  <th>Start Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% prescriptions.forEach(rx => { %>
+                  <tr>
+                    <td><%= rx.medicationName %></td>
+                    <td><%= rx.dosage %></td>
+                    <td><%= rx.frequency || 'N/A' %></td>
+                    <td><span class="badge badge-<%= rx.status %>"><%= rx.status %></span></td>
+                    <td><%= new Date(rx.startDate).toLocaleDateString() %></td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="section">
+        <h3>Appointments (<%= appointments.length %>)</h3>
+        <% if (appointments.length === 0) { %>
+          <p class="no-data-text">No appointments found.</p>
+        <% } else { %>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Summary</th>
+                  <th>Diagnoses</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% appointments.forEach(appt => { %>
+                  <tr>
+                    <td><%= new Date(appt.date).toLocaleDateString() %></td>
+                    <td><%= appt.summary %></td>
+                    <td>
+                      <% if (appt.diagnoses && appt.diagnoses.length > 0) { %>
+                        <%= appt.diagnoses.map(d => d.description).join(', ') %>
+                      <% } else { %>
+                        N/A
+                      <% } %>
+                    </td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="section">
+        <h3>Billing Records (<%= billings.length %>)</h3>
+        <% if (billings.length === 0) { %>
+          <p class="no-data-text">No billing records found.</p>
+        <% } else { %>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th>Payment Date</th>
+                  <th>Insurance</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% billings.forEach(bill => { %>
+                  <tr>
+                    <td>$<%= bill.amount %></td>
+                    <td><span class="badge badge-<%= bill.status %>"><%= bill.status %></span></td>
+                    <td><%= new Date(bill.createdAt).toLocaleDateString() %></td>
+                    <td><%= bill.paymentDate ? new Date(bill.paymentDate).toLocaleDateString() : 'N/A' %></td>
+                    <td><%= bill.InsuranceProvider || 'N/A' %></td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 Medical Database Management System</p>
+  </footer>
+</body>
+</html>
