@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= physician.name %> - Physician Profile</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+  <%- include("partials/navbar", { activePage }) %>
+
+  <div class="container">
+    <div class="page-header">
+      <h2><%= physician.name %></h2>
+      <div>
+        <a href="/physicians" class="btn btn-secondary">Back to Physicians</a>
+        <a href="/" class="btn btn-secondary">Home</a>
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-section">
+        <h3>Physician Information</h3>
+        <div class="info-card">
+          <div class="info-row"><span class="label">Name:</span> <span class="value"><%= physician.name %></span></div>
+          <div class="info-row"><span class="label">Specialization:</span> <span class="value"><%= physician.specialization %></span></div>
+          <div class="info-row"><span class="label">Username:</span> <span class="value"><%= physician.username || "N/A" %></span></div>
+          <div class="info-row"><span class="label">Role:</span> <span class="value"><%= physician.role || "physician" %></span></div>
+          <div class="info-row"><span class="label">Email:</span> <span class="value"><%= physician.contactInfo?.email || "N/A" %></span></div>
+          <div class="info-row"><span class="label">Phone:</span> <span class="value"><%= physician.contactInfo?.phone || "N/A" %></span></div>
+        </div>
+        <% if (canEdit) { %>
+          <div style="margin-top:12px;">
+            <a href="/physicians/<%= physician._id %>/edit" class="btn">Edit Profile</a>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="detail-section">
+        <h3>Schedule</h3>
+        <div class="info-card">
+          <% 
+            const dayOrder = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+            const sortedSchedule = (physician.schedule || []).slice().sort((a,b) => {
+              const parse = (s) => {
+                const day = s.slice(0,3);
+                const t = s.match(/(\d{2}):(\d{2})/);
+                const mins = t ? parseInt(t[1])*60 + parseInt(t[2]) : 0;
+                return { d: dayOrder.indexOf(day), m: mins };
+              };
+              const A = parse(a), B = parse(b);
+              return (A.d - B.d) || (A.m - B.m);
+            });
+          %>
+          <% if (sortedSchedule.length) { %>
+            <div class="schedule-grid compact">
+              <% sortedSchedule.forEach(slot => { %>
+                <div class="schedule-card compact">
+                  <span class="schedule-dot"></span>
+                  <span><%= slot %></span>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <p class="no-data-text">No schedule set.</p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-grid">
+      <div class="section">
+        <h3>Recent Appointments (<%= appointments.length %>)</h3>
+        <% if (!appointments.length) { %>
+          <p class="no-data-text">No appointments found.</p>
+        <% } else { %>
+          <div class="table-wrapper">
+            <table class="data-table sortable-table paged-table" data-rows-per-page="10">
+              <thead>
+                <tr>
+                  <th><button class="table-sort" data-col="0" data-type="date">Date <span class="arrow">▲</span></button></th>
+                  <th>Summary</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% appointments.forEach(appt => { %>
+                  <tr>
+                    <td><%= appt.date ? new Date(appt.date).toLocaleDateString() : "" %></td>
+                    <td><%= appt.summary || "No summary" %></td>
+                    <td>
+                      <% if (appt.notes) { %>
+                        <button class="btn btn-small" data-note="<%= appt.notes %>" onclick="showNote(this)">View</button>
+                      <% } else { %>
+                        <span class="muted">No notes</span>
+                      <% } %>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="section">
+        <h3>Recent Prescriptions (<%= prescriptions.length %>)</h3>
+        <% if (!prescriptions.length) { %>
+          <p class="no-data-text">No prescriptions found.</p>
+        <% } else { %>
+          <div class="table-wrapper">
+            <table class="data-table sortable-table paged-table" data-rows-per-page="10">
+              <thead>
+                <tr>
+                  <th><button class="table-sort" data-col="0" data-type="text">Patient <span class="arrow">▲</span></button></th>
+                  <th><button class="table-sort" data-col="1" data-type="text">Medication <span class="arrow">▲</span></button></th>
+                  <th><button class="table-sort" data-col="2" data-type="text">Dosage <span class="arrow">▲</span></button></th>
+                  <th><button class="table-sort" data-col="3" data-type="text">Status <span class="arrow">▲</span></button></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% prescriptions.forEach(rx => { %>
+                  <tr>
+                    <td><%= rx.patientID?.name || "Unknown" %></td>
+                    <td><%= rx.medicationName %></td>
+                    <td><%= rx.dosage %></td>
+                    <td><span class="badge badge-<%= rx.status %>"><%= rx.status %></span></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="section">
+        <h3>Recent Billings (<%= billings.length %>)</h3>
+        <% if (!billings.length) { %>
+          <p class="no-data-text">No billings found.</p>
+        <% } else { %>
+          <div class="table-wrapper">
+            <table class="data-table sortable-table">
+              <thead>
+                <tr>
+                  <th><button class="table-sort" data-col="0" data-type="text">Patient <span class="arrow">▲</span></button></th>
+                  <th><button class="table-sort" data-col="1" data-type="number">Amount <span class="arrow">▲</span></button></th>
+                  <th><button class="table-sort" data-col="2" data-type="text">Status <span class="arrow">▲</span></button></th>
+                  <th><button class="table-sort" data-col="3" data-type="date">Date <span class="arrow">▲</span></button></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% billings.forEach(b => { %>
+                  <tr>
+                    <td><%= b.patientID?.name || "Unknown" %></td>
+                    <td>$<%= b.amount %></td>
+                    <td><span class="badge badge-<%= b.status %>"><%= b.status %></span></td>
+                    <td><%= b.createdAt ? new Date(b.createdAt).toLocaleDateString() : "" %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 Medical Database Management System</p>
+  </footer>
+
+  <div id="noteModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <span class="close" onclick="closeNote()">×</span>
+      <h3>Appointment Note</h3>
+      <div id="noteBody" style="white-space:pre-wrap;"></div>
+    </div>
+  </div>
+
+  <script>
+    function showNote(btn) {
+      const note = btn.dataset.note || "No notes";
+      document.getElementById("noteBody").textContent = note;
+      document.getElementById("noteModal").style.display = "block";
+    }
+    function closeNote() {
+      document.getElementById("noteModal").style.display = "none";
+    }
+    window.onclick = function(e) {
+      const modal = document.getElementById("noteModal");
+      if (e.target === modal) closeNote();
+    }
+
+    // Client-side sorting for detail tables
+    document.querySelectorAll(".sortable-table").forEach(table => {
+      const headers = table.querySelectorAll(".table-sort");
+      headers.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const col = Number(btn.dataset.col);
+          const type = btn.dataset.type || "text";
+          const tbody = table.querySelector("tbody");
+          const rows = Array.from(tbody.querySelectorAll("tr"));
+          const isDesc = btn.classList.contains("active") && btn.classList.contains("desc");
+          headers.forEach(h => h.classList.remove("active", "asc", "desc"));
+          btn.classList.add("active", isDesc ? "asc" : "desc");
+          const dir = isDesc ? 1 : -1; // flip
+
+          const sorted = rows.sort((a, b) => {
+            const av = (a.children[col]?.innerText || "").trim();
+            const bv = (b.children[col]?.innerText || "").trim();
+            if (type === "number") return dir * ((parseFloat(bv) || 0) - (parseFloat(av) || 0));
+            if (type === "date") return dir * ((Date.parse(bv) || 0) - (Date.parse(av) || 0));
+            return dir * bv.localeCompare(av);
+          });
+          tbody.innerHTML = "";
+          sorted.forEach(r => tbody.appendChild(r));
+        });
+      });
+    });
+
+    // Simple client pagination for paged tables
+    document.querySelectorAll(".paged-table").forEach(table => {
+      const perPage = Number(table.dataset.rowsPerPage) || 10;
+      const tbody = table.querySelector("tbody");
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+      if (rows.length <= perPage) return;
+
+      let currentPage = 1;
+      const pageCount = Math.ceil(rows.length / perPage);
+
+      function renderPage(page) {
+        currentPage = page;
+        tbody.innerHTML = "";
+        rows.slice((page-1)*perPage, page*perPage).forEach(r => tbody.appendChild(r));
+        renderControls();
+      }
+
+      const nav = document.createElement("div");
+      nav.className = "table-pagination";
+      table.parentElement.appendChild(nav);
+
+      function renderControls() {
+        nav.innerHTML = "";
+        for (let i = 1; i <= pageCount; i++) {
+          const btn = document.createElement("button");
+          btn.textContent = i;
+          btn.className = "page-btn" + (i === currentPage ? " active" : "");
+          btn.addEventListener("click", () => renderPage(i));
+          nav.appendChild(btn);
+        }
+      }
+
+      renderPage(1);
+    });
+  </script>
+
+  <style>
+    .table-sort {
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      font: inherit;
+      font-weight: 700;
+      color: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+      min-width: 90px;
+    }
+    .table-sort .arrow {
+      font-size: 10px;
+      width: 10px;
+      display: inline-block;
+      transition: transform 0.2s, opacity 0.2s;
+      opacity: 0.4;
+    }
+    .table-sort:hover { text-decoration: underline; }
+    .table-sort.active .arrow { opacity: 1; }
+    .table-sort.active.desc .arrow { transform: rotate(180deg); }
+    .table-pagination {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      justify-content: flex-end;
+    }
+    .page-btn {
+      padding: 4px 8px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .page-btn.active {
+      background: #2563eb;
+      color: #fff;
+      border-color: #2563eb;
+    }
+    .schedule-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+      max-height: 220px;
+      overflow-y: auto;
+      padding: 4px 6px;
+    }
+    .schedule-card {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      border-radius: 10px;
+      font-weight: 600;
+      color: #1e3a8a;
+    }
+    .schedule-dot {
+      width: 10px;
+      height: 10px;
+      background: #22c55e;
+      border-radius: 50%;
+      display: inline-block;
+    }
+  </style>
+</body>
+</html>

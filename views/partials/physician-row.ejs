@@ -1,0 +1,12 @@
+<tr>
+  <td><strong><%= physician.name %></strong></td>
+  <td><%= physician.specialization %></td>
+  <td><%= physician.contactInfo?.email || "N/A" %></td>
+  <td><%= physician.contactInfo?.phone || "N/A" %></td>
+
+  <td>
+    <a class="btn btn-small" href="/physicians/<%= physician._id %>">
+      Profile
+    </a>
+  </td>
+</tr>

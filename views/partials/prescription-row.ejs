@@ -1,0 +1,39 @@
+<tr>
+  <td>
+    <a href="/patients/<%= rx.patientID?._id %>">
+      <%= rx.patientID?.name || "Unknown" %>
+    </a>
+  </td>
+
+  <td><strong><%= rx.medicationName %></strong></td>
+  <td><%= rx.dosage %></td>
+  <td><%= rx.frequency || "N/A" %></td>
+  <td><%= rx.type || "N/A" %></td>
+
+  <td>
+    <span class="badge badge-<%= (rx.status || "unknown").toLowerCase() %>">
+      <%= rx.status || "N/A" %>
+    </span>
+  </td>
+
+  <td>
+    <%= rx.startDate ? new Date(rx.startDate).toLocaleDateString() : "" %>
+  </td>
+
+  <td>
+    <%= rx.endDate ? new Date(rx.endDate).toLocaleDateString() : "" %>
+  </td>
+
+  <td>
+    <a class="btn btn-small" href="/prescriptions/<%= rx._id %>/edit">Edit</a>
+    <form method="POST"
+          action="/prescriptions/<%= rx._id %>/delete"
+          style="display:inline;">
+      <button class="btn btn-small"
+              style="background:#dc2626;font-size:11px;"
+              onclick="return confirm('Delete this prescription?')">
+        Delete
+      </button>
+    </form>
+  </td>
+</tr>

@@ -12,6 +12,7 @@ const physicianSchema = new mongoose.Schema({
   // Authentication fields
   username: { type: String, unique: true, sparse: true },
   passwordHash: String,
+  role: { type: String, enum: ['physician', 'admin'], default: 'physician' },
   isActive: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now }
 });
@@ -35,3 +36,8 @@ physicianSchema.methods.verifyPassword = async function(password) {
 
 const Physician = mongoose.model("Physician", physicianSchema);
 export default Physician;
+
+// Indexes to speed common lookups
+physicianSchema.index({ name: 1 });
+physicianSchema.index({ "contactInfo.email": 1 });
+physicianSchema.index({ specialization: 1 });

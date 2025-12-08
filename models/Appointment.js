@@ -18,5 +18,11 @@ const appointmentSchema = new mongoose.Schema({
   deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Physician' }
 }, { timestamps: true });
 
+// Helpful indexes to speed common list queries and filters
+appointmentSchema.index({ isDeleted: 1, date: -1 });
+appointmentSchema.index({ isDeleted: 1, patientID: 1, date: -1 });
+appointmentSchema.index({ isDeleted: 1, physicianID: 1, date: -1 });
+appointmentSchema.index({ isDeleted: 1, "diagnoses.code": 1 });
+
 const Appointment = mongoose.model("Appointment", appointmentSchema);
 export default Appointment;

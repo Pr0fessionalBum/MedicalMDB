@@ -7,19 +7,8 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <nav class="navbar">
-    <div class="container">
-      <h1 class="logo">🏥 Medical DB</h1>
-      <ul class="nav-links">
-        <li><a href="/patients" class="active">Patients</a></li>
-        <li><a href="/physicians">Physicians</a></li>
-        <li><a href="/prescriptions">Prescriptions</a></li>
-        <li><a href="/appointments">Appointments</a></li>
-        <li><a href="/billings">Billings</a></li>
-        <li><a href="/logout">Logout</a></li>
-      </ul>
-    </div>
-  </nav>
+
+  <%- include("partials/navbar", { activePage: "patients" }) %>
 
   <div class="container">
     <div class="page-header">
@@ -31,34 +20,13 @@
       <div class="detail-section">
         <h3>Patient Information</h3>
         <div class="info-card">
-          <div class="info-row">
-            <span class="label">Name:</span>
-            <span class="value"><%= patient.name %></span>
-          </div>
-          <div class="info-row">
-            <span class="label">Date of Birth:</span>
-            <span class="value"><%= new Date(patient.dob).toLocaleDateString() %></span>
-          </div>
-          <div class="info-row">
-            <span class="label">Age:</span>
-            <span class="value"><%= patient.age %> years old</span>
-          </div>
-          <div class="info-row">
-            <span class="label">Gender:</span>
-            <span class="value"><%= patient.gender %></span>
-          </div>
-          <div class="info-row">
-            <span class="label">Email:</span>
-            <span class="value"><%= patient.contactInfo?.email || 'N/A' %></span>
-          </div>
-          <div class="info-row">
-            <span class="label">Phone:</span>
-            <span class="value"><%= patient.contactInfo?.phone || 'N/A' %></span>
-          </div>
-          <div class="info-row">
-            <span class="label">Address:</span>
-            <span class="value"><%= patient.contactInfo?.address || 'N/A' %></span>
-          </div>
+          <div class="info-row"><span class="label">Name:</span><span class="value"><%= patient.name %></span></div>
+          <div class="info-row"><span class="label">Date of Birth:</span><span class="value"><%= new Date(patient.dob).toLocaleDateString() %></span></div>
+          <div class="info-row"><span class="label">Age:</span><span class="value"><%= patient.age %> years old</span></div>
+          <div class="info-row"><span class="label">Gender:</span><span class="value"><%= patient.gender %></span></div>
+          <div class="info-row"><span class="label">Email:</span><span class="value"><%= patient.contactInfo?.email || 'N/A' %></span></div>
+          <div class="info-row"><span class="label">Phone:</span><span class="value"><%= patient.contactInfo?.phone || 'N/A' %></span></div>
+          <div class="info-row"><span class="label">Address:</span><span class="value"><%= patient.contactInfo?.address || 'N/A' %></span></div>
         </div>
       </div>
     </div>
@@ -70,14 +38,15 @@
           <p class="no-data-text">No prescriptions found.</p>
         <% } else { %>
           <div class="table-wrapper">
-            <table class="data-table">
+            <table class="data-table sortable-table">
               <thead>
                 <tr>
-                  <th>Medication</th>
-                  <th>Dosage</th>
-                  <th>Frequency</th>
-                  <th>Status</th>
-                  <th>Start Date</th>
+                  <th><button class="table-sort" data-col="0" data-type="text">Medication <span class="arrow">&#9650;</span></button></th>
+                  <th><button class="table-sort" data-col="1" data-type="text">Dosage <span class="arrow">&#9650;</span></button></th>
+                  <th><button class="table-sort" data-col="2" data-type="text">Frequency <span class="arrow">&#9650;</span></button></th>
+                  <th><button class="table-sort" data-col="3" data-type="text">Status <span class="arrow">&#9650;</span></button></th>
+                  <th><button class="table-sort" data-col="4" data-type="date">Start Date <span class="arrow">&#9650;</span></button></th>
+                  <th>Physician</th>
                 </tr>
               </thead>
               <tbody>
@@ -88,6 +57,7 @@
                     <td><%= rx.frequency || 'N/A' %></td>
                     <td><span class="badge badge-<%= rx.status %>"><%= rx.status %></span></td>
                     <td><%= new Date(rx.startDate).toLocaleDateString() %></td>
+                    <td><%= rx.physicianID?.name || "N/A" %></td>
                   </tr>
                 <% }); %>
               </tbody>
@@ -102,12 +72,14 @@
           <p class="no-data-text">No appointments found.</p>
         <% } else { %>
           <div class="table-wrapper">
-            <table class="data-table">
+            <table class="data-table sortable-table">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Summary</th>
-                  <th>Diagnoses</th>
+                  <th><button class="table-sort" data-col="0" data-type="date">Date <span class="arrow">&#9650;</span></button></th>
+                  <th><button class="table-sort" data-col="1" data-type="text">Summary <span class="arrow">&#9650;</span></button></th>
+                  <th><button class="table-sort" data-col="2" data-type="text">Diagnoses <span class="arrow">&#9650;</span></button></th>
+                  <th>Physician</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -122,6 +94,8 @@
                         N/A
                       <% } %>
                     </td>
+                    <td><%= appt.physicianID?.name || "N/A" %></td>
+                    <td><a class="btn btn-small btn-ghost" href="/appointments/<%= appt._id %>">View</a></td>
                   </tr>
                 <% }); %>
               </tbody>
@@ -136,14 +110,14 @@
           <p class="no-data-text">No billing records found.</p>
         <% } else { %>
           <div class="table-wrapper">
-            <table class="data-table">
+            <table class="data-table sortable-table">
               <thead>
                 <tr>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th>Created</th>
-                  <th>Payment Date</th>
-                  <th>Insurance</th>
+                  <th><button class="table-sort" data-col="0" data-type="number">Amount <span class="arrow">&#9650;</span></button></th>
+                  <th><button class="table-sort" data-col="1" data-type="text">Status <span class="arrow">&#9650;</span></button></th>
+                  <th><button class="table-sort" data-col="2" data-type="date">Created <span class="arrow">&#9650;</span></button></th>
+                  <th><button class="table-sort" data-col="3" data-type="date">Payment Date <span class="arrow">&#9650;</span></button></th>
+                  <th><button class="table-sort" data-col="4" data-type="text">Insurance <span class="arrow">&#9650;</span></button></th>
                 </tr>
               </thead>
               <tbody>
@@ -167,5 +141,63 @@
   <footer>
     <p>&copy; 2025 Medical Database Management System</p>
   </footer>
+
+  <script>
+    // Client-side sorting for tables on detail page
+    document.querySelectorAll(".sortable-table").forEach(table => {
+      const headers = table.querySelectorAll(".table-sort");
+      headers.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const col = Number(btn.dataset.col);
+          const type = btn.dataset.type || "text";
+          const tbody = table.querySelector("tbody");
+          const rows = Array.from(tbody.querySelectorAll("tr"));
+          const isDesc = btn.classList.contains("active") && btn.classList.contains("desc");
+          headers.forEach(h => h.classList.remove("active", "asc", "desc"));
+          btn.classList.add("active", isDesc ? "asc" : "desc");
+          const dir = isDesc ? 1 : -1;
+
+          const sorted = rows.sort((a, b) => {
+            const av = (a.children[col]?.innerText || "").trim();
+            const bv = (b.children[col]?.innerText || "").trim();
+            if (type === "number") return dir * ((parseFloat(bv) || 0) - (parseFloat(av) || 0));
+            if (type === "date") return dir * ((Date.parse(bv) || 0) - (Date.parse(av) || 0));
+            return dir * bv.localeCompare(av);
+          });
+          tbody.innerHTML = "";
+          sorted.forEach(r => tbody.appendChild(r));
+        });
+      });
+    });
+  </script>
+
+  <style>
+    .table-sort {
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      font: inherit;
+      font-weight: 700;
+      color: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+      min-width: 90px;
+    }
+    .table-sort .arrow {
+      font-size: 10px;
+      width: 10px;
+      display: inline-block;
+      transition: transform 0.2s, opacity 0.2s;
+      opacity: 0.4;
+    }
+    .table-sort:hover { text-decoration: underline; }
+    .table-sort.active .arrow { opacity: 1; }
+    .table-sort.active.desc .arrow { transform: rotate(180deg); }
+  </style>
+
 </body>
 </html>

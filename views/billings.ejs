@@ -4,126 +4,186 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Billings - Medical DB</title>
+
   <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/smart-search.css">
+  <script defer src="/js/table-ajax.js"></script>
 </head>
+
 <body>
-  <nav class="navbar">
-    <div class="container">
-      <h1 class="logo">🏥 Medical DB</h1>
-      <ul class="nav-links">
-        <li><a href="/patients">Patients</a></li>
-        <li><a href="/physicians">Physicians</a></li>
-        <li><a href="/prescriptions">Prescriptions</a></li>
-        <li><a href="/appointments">Appointments</a></li>
-        <li><a href="/billings" class="active">Billings</a></li>
-        <li><a href="/logout">Logout</a></li>
-      </ul>
-    </div>
-  </nav>
+
+  <!-- NAVBAR -->
+  <%- include("partials/navbar", { activePage: "billings" }) %>
 
   <div class="container">
+
+    <!-- HEADER -->
     <div class="page-header">
-      <h2>Billing Records</h2>
+      <h2>Billings</h2>
       <a href="/" class="btn btn-secondary">Back Home</a>
     </div>
 
-    <div class="controls">
-      <form method="GET" class="search-form">
+    <!-- ======== TOTALS BAR (Modern stat cards) ======== -->
+    <div class="stats-row">
+      <div class="stat-box">
+        <h4>Total Amount</h4>
+        <div class="stat-value">$<%= Number(totals.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></div>
+      </div>
+
+      <div class="stat-box">
+        <h4>Paid</h4>
+        <div class="stat-value">$<%= Number(totals.totalPaid || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></div>
+      </div>
+
+      <div class="stat-box">
+        <h4>Pending</h4>
+        <div class="stat-value">$<%= Number(totals.totalPending || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></div>
+      </div>
+
+      <div class="stat-box">
+        <h4>Due</h4>
+        <div class="stat-value">$<%= Number(totals.totalDue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></div>
+      </div>
+    </div>
+
+    <!-- =============== MODERN SEARCHBAR =============== -->
+    <div class="searchbar-wrapper">
+      <form id="filter-form" class="searchbar-modern" method="GET">
+
         <input 
-          type="text" 
-          name="search" 
-          placeholder="Search by status..." 
-          value="<%= search %>" 
-          class="search-input"
+          type="text"
+          name="search"
+          placeholder="Search billings..."
+          value="<%= search %>"
+          autocomplete="off"
+          class="searchbar-main"
         >
-        <select name="sort" class="sort-select" onchange="this.form.submit()">
-          <option value="status" <%= sort === 'status' ? 'selected' : '' %>>Sort by Status</option>
-          <option value="amount" <%= sort === 'amount' ? 'selected' : '' %>>Sort by Amount (High to Low)</option>
-          <option value="date" <%= sort === 'date' ? 'selected' : '' %>>Sort by Created Date</option>
+
+        <input type="hidden" name="sort" id="sort-hidden" value="<%= sort %>">
+        <input type="hidden" name="order" id="order-hidden" value="<%= order || 'desc' %>">
+        <select name="status" class="bubble">
+          <option value="">Status</option>
+          <option value="Paid" <%= status === "Paid" ? "selected" : "" %>>Paid</option>
+          <option value="Pending" <%= status === "Pending" ? "selected" : "" %>>Pending</option>
+          <option value="Due" <%= status === "Due" ? "selected" : "" %>>Due</option>
         </select>
-        <button type="submit" class="btn btn-primary">Search</button>
+
+        <button type="submit" class="bubble btn-apply">Apply</button>
       </form>
     </div>
 
     <% if (billings.length === 0) { %>
       <div class="no-data">
-        <p>No billing records found.</p>
+        <p>No billing records found. Try adjusting search or filters.</p>
       </div>
     <% } else { %>
-      <div class="stats-row">
-        <div class="stat-box">
-          <h4>Total Amount</h4>
-          <p class="stat-value">$<%= (totals && totals.totalAmount ? totals.totalAmount : billings.reduce((sum, b) => sum + (b.amount || 0), 0)).toLocaleString() %></p>
-        </div>
-        <div class="stat-box">
-          <h4>Total Paid</h4>
-          <p class="stat-value">$<%= (totals && totals.totalPaid ? totals.totalPaid : billings.filter(b => b.status === 'Paid').reduce((s,b) => s + (b.amount||0), 0)).toLocaleString() %></p>
-        </div>
-        <div class="stat-box">
-          <h4>Total Pending</h4>
-          <p class="stat-value">$<%= (totals && totals.totalPending ? totals.totalPending : billings.filter(b => b.status === 'Pending').reduce((s,b) => s + (b.amount||0), 0)).toLocaleString() %></p>
-        </div>
-        <div class="stat-box">
-          <h4>Total Due</h4>
-          <p class="stat-value">$<%= (totals && totals.totalDue ? totals.totalDue : billings.filter(b => b.status === 'Due').reduce((s,b) => s + (b.amount||0), 0)).toLocaleString() %></p>
-        </div>
-      </div>
 
+      <!-- TABLE -->
       <div class="table-wrapper">
         <table class="data-table">
           <thead>
             <tr>
               <th>Patient</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Created</th>
-              <th>Payment Date</th>
-              <th>Insurance Provider</th>
-              <th>Coverage</th>
+              <th>
+                <button type="button" class="table-sort <%= sort === 'status' ? 'active ' + order : '' %>" data-sort="status">
+                  Status <span class="arrow">▲</span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="table-sort <%= sort === 'amount' ? 'active ' + order : '' %>" data-sort="amount">
+                  Amount <span class="arrow">▲</span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="table-sort <%= sort === 'createdAt' ? 'active ' + order : '' %>" data-sort="createdAt">
+                  Date Issued <span class="arrow">▲</span>
+                </button>
+              </th>
               <th>Actions</th>
             </tr>
           </thead>
-          <tbody>
-            <% billings.forEach(bill => { %>
-              <tr>
-                <td><a href="/patients/<%= bill.patientID._id %>"><%= bill.patientID.name %></a></td>
-                <td><strong>$<%= bill.amount %></strong></td>
-                <td><span class="badge badge-<%= bill.status %>"><%= bill.status %></span></td>
-                <td><%= new Date(bill.createdAt).toLocaleDateString() %></td>
-                <td><%= bill.paymentDate ? new Date(bill.paymentDate).toLocaleDateString() : 'N/A' %></td>
-                <td><%= bill.InsuranceProvider || 'None' %></td>
-                <td>$<%= bill.coverageAmount || 0 %></td>
-                <td>
-                  <form method="POST" action="/billings/<%= bill._id %>/delete" style="display:inline; margin: 0;">
-                    <button type="submit" class="btn btn-small" style="background-color: #dc2626; font-size: 11px;" onclick="return confirm('Delete this billing record?')">Delete</button>
-                  </form>
-                </td>
-              </tr>
-            <% }); %>
+          <tbody id="billings-table-body">
+            <%- include("partials/billing-row", { billings, billingsCanEdit }) %>
           </tbody>
         </table>
       </div>
-      <div class="pagination-controls">
-        <% if (typeof renderPagination === 'function' && totalPages > 1) { %>
-          <%- renderPagination(page, totalPages) %>
-        <% } %>
+
+      <!-- PAGINATION -->
+      <div id="pagination-container">
+        <%- renderPagination(req, "/billings", page, totalPages) %>
       </div>
-      <p class="record-count">Showing <%= billings.length %> of <%= totalCount %> billing record<%= totalCount !== 1 ? 's' : '' %></p>
-      <!-- Per-page dropdown at bottom (only one instance) -->
-      <div class="perpage-controls" style="margin-top:8px; text-align:right; font-size:12px;">
-        <label for="page-size" style="margin-right:4px;">Per page:</label>
-        <select id="page-size" name="limit" style="font-size:12px; padding:2px 6px;" onchange="window.location.href='/billings?<%= paginationQuery(page) %>&limit='+this.value">
-          <option value="10" <%= limit == 10 ? 'selected' : '' %>>10</option>
-          <option value="25" <%= limit == 25 ? 'selected' : '' %>>25</option>
-          <option value="50" <%= limit == 50 ? 'selected' : '' %>>50</option>
-          <option value="100" <%= limit == 100 ? 'selected' : '' %>>100</option>
-        </select>
-      </div>
+
+      <p class="record-count" id="result-count">
+        Showing <%= billings.length %> of <%= totalCount %> billing record<%= totalCount !== 1 ? "s" : "" %>.
+      </p>
+
     <% } %>
+
   </div>
+
+  <script src="/js/table-ajax.js"></script>
+  <script>
+    // Column sorting
+    (function() {
+      const sortButtons = document.querySelectorAll(".table-sort");
+      const sortHidden = document.getElementById("sort-hidden");
+      const orderHidden = document.getElementById("order-hidden");
+      const filterForm = document.getElementById("filter-form");
+      function applySortState() {
+        sortButtons.forEach(btn => {
+          const active = btn.dataset.sort === sortHidden.value;
+          btn.classList.toggle("active", active);
+          btn.classList.toggle("asc", active && orderHidden.value === "asc");
+          btn.classList.toggle("desc", active && orderHidden.value === "desc");
+        });
+      }
+      applySortState();
+      sortButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const field = btn.dataset.sort;
+          if (sortHidden.value === field) {
+            orderHidden.value = orderHidden.value === "asc" ? "desc" : "asc";
+          } else {
+            sortHidden.value = field;
+            orderHidden.value = field === "amount" ? "desc" : "asc";
+          }
+          applySortState();
+          filterForm.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+      });
+    })();
+  </script>
+  <style>
+    .table-sort {
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      font: inherit;
+      font-weight: 700;
+      color: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+      min-width: 90px;
+    }
+    .table-sort .arrow {
+      font-size: 10px;
+      width: 10px;
+      display: inline-block;
+      transition: transform 0.2s, opacity 0.2s;
+      opacity: 0.4;
+    }
+    .table-sort:hover { text-decoration: underline; }
+    .table-sort.active .arrow { opacity: 1; }
+    .table-sort.active.desc .arrow { transform: rotate(180deg); }
+  </style>
 
   <footer>
     <p>&copy; 2025 Medical Database Management System</p>
   </footer>
+
 </body>
 </html>

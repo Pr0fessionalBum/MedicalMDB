@@ -1,143 +1,205 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Prescriptions - Medical DB</title>
-  <link rel="stylesheet" href="/style.css">
+
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/smart-search.css" />
+  <script defer src="/js/table-ajax.js"></script>
 </head>
+
 <body>
-  <nav class="navbar">
-    <div class="container">
-      <h1 class="logo">🏥 Medical DB</h1>
-      <ul class="nav-links">
-        <li><a href="/patients">Patients</a></li>
-        <li><a href="/physicians">Physicians</a></li>
-        <li><a href="/prescriptions" class="active">Prescriptions</a></li>
-        <li><a href="/appointments">Appointments</a></li>
-        <li><a href="/billings">Billings</a></li>
-        <li><a href="/logout">Logout</a></li>
-      </ul>
-    </div>
-  </nav>
+
+  <!-- NAVBAR -->
+  <%- include("partials/navbar", { activePage: "prescriptions" }) %>
 
   <div class="container">
+
+    <!-- PAGE HEADER -->
     <div class="page-header">
       <h2>Prescriptions</h2>
-      <div>
-        <a href="/prescriptions/create" class="btn btn-primary">+ Add Prescription</a>
-        <a href="/" class="btn btn-secondary">Back Home</a>
-      </div>
+      <a href="/" class="btn btn-secondary">Back Home</a>
     </div>
 
-    <div class="controls">
-      <form method="GET" class="search-form" id="prescription-search-form">
-        <input 
-          type="text" 
-          name="search" 
-          placeholder="Search by medication, dosage, instructions..." 
-          value="<%= search %>" 
-          class="search-input"
+    <!-- FILTER BAR -->
+    <div class="searchbar-wrapper">
+      <form id="filter-form" class="searchbar-modern" method="GET">
+
+        <input
+          id="search-input"
+          type="text"
+          name="search"
+          placeholder="Search prescriptions..."
+          value="<%= search %>"
+          autocomplete="off"
+          class="searchbar-main"
         >
-        <select name="status" class="filter-select" style="margin-left:8px;" onchange="this.form.submit()">
-          <option value="">All Statuses</option>
-          <option value="active" <%= status === 'active' ? 'selected' : '' %>>Active</option>
-          <option value="completed" <%= status === 'completed' ? 'selected' : '' %>>Completed</option>
-          <option value="discontinued" <%= status === 'discontinued' ? 'selected' : '' %>>Discontinued</option>
-          <option value="pending" <%= status === 'pending' ? 'selected' : '' %>>Pending</option>
+
+        <select id="type-filter" name="type" class="bubble">
+          <option value="">Type</option>
+          <option value="chronic" <%= type === "chronic" ? "selected" : "" %>>Chronic</option>
         </select>
-        <select name="type" class="filter-select" style="margin-left:8px;" onchange="this.form.submit()">
-          <option value="">All Types</option>
-          <option value="Tablet" <%= type === 'Tablet' ? 'selected' : '' %>>Tablet</option>
-          <option value="Injection" <%= type === 'Injection' ? 'selected' : '' %>>Injection</option>
-          <option value="Liquid" <%= type === 'Liquid' ? 'selected' : '' %>>Liquid</option>
-          <option value="Other" <%= type === 'Other' ? 'selected' : '' %>>Other</option>
+
+        <select id="status-filter" name="status" class="bubble">
+          <option value="">Status</option>
+          <option value="active" <%= status === "active" ? "selected" : "" %>>Active</option>
+          <option value="completed" <%= status === "completed" ? "selected" : "" %>>Completed</option>
         </select>
-        <select name="sort" class="sort-select" style="margin-left:8px;" onchange="this.form.submit()">
-          <option value="medicationName" <%= sort === 'medicationName' ? 'selected' : '' %>>Sort by Medication</option>
-          <option value="status" <%= sort === 'status' ? 'selected' : '' %>>Sort by Status</option>
-          <option value="date" <%= sort === 'date' ? 'selected' : '' %>>Sort by Start Date</option>
-        </select>
-        <button type="submit" class="btn btn-primary" style="margin-left:8px;">Search</button>
+
+        <input type="hidden" name="sort" id="sort-hidden" value="<%= sort %>">
+        <input type="hidden" name="order" id="order-hidden" value("<%= order %>">
+
+        <button type="submit" class="bubble btn-apply">Apply</button>
+        <button type="reset" class="bubble btn-reset" onclick="window.location.href='/prescriptions'">Reset</button>
+
       </form>
     </div>
 
     <% if (prescriptions.length === 0) { %>
-      <div class="no-data">
-        <p>No prescriptions found.</p>
-      </div>
+      <div class="no-data"><p>No prescriptions found.</p></div>
+
     <% } else { %>
-      <div class="table-wrapper" id="prescriptions-table-wrapper">
+
+      <!-- TABLE -->
+      <div class="table-wrapper">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Patient</th>
-              <th>Medication</th>
-              <th>Dosage</th>
-              <th>Frequency</th>
-              <th>Type</th>
-              <th>Status</th>
-              <th>Start Date</th>
+              <th>
+                <button type="button" class="table-sort <%= sort === 'patient' ? 'active ' + order : '' %>" data-sort="patient">
+                  Patient <span class="arrow">&#9650;</span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="table-sort <%= sort === 'medicationName' ? 'active ' + order : '' %>" data-sort="medicationName">
+                  Medication <span class="arrow">&#9650;</span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="table-sort <%= sort === 'dosage' ? 'active ' + order : '' %>" data-sort="dosage">
+                  Dosage <span class="arrow">&#9650;</span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="table-sort <%= sort === 'frequency' ? 'active ' + order : '' %>" data-sort="frequency">
+                  Frequency <span class="arrow">&#9650;</span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="table-sort <%= sort === 'type' ? 'active ' + order : '' %>" data-sort="type">
+                  Type <span class="arrow">&#9650;</span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="table-sort <%= sort === 'status' ? 'active ' + order : '' %>" data-sort="status">
+                  Status <span class="arrow">&#9650;</span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="table-sort <%= sort === 'startDate' ? 'active ' + order : '' %>" data-sort="startDate">
+                  Start Date <span class="arrow">&#9650;</span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="table-sort <%= sort === 'endDate' ? 'active ' + order : '' %>" data-sort="endDate">
+                  End Date <span class="arrow">&#9650;</span>
+                </button>
+              </th>
               <th>Actions</th>
             </tr>
           </thead>
+
           <tbody id="prescriptions-table-body">
             <% prescriptions.forEach(rx => { %>
-              <tr>
-                <td><a href="/patients/<%= rx.patientID._id %>"><%= rx.patientID.name %></a></td>
-                <td><strong><%= rx.medicationName %></strong></td>
-                <td><%= rx.dosage %></td>
-                <td><%= rx.frequency || 'N/A' %></td>
-                <td><%= rx.type || 'N/A' %></td>
-                <td><span class="badge badge-<%= rx.status %>"><%= rx.status %></span></td>
-                <td><%= rx.startDate ? new Date(rx.startDate).toLocaleDateString() : '' %></td>
-                <td>
-                  <form method="POST" action="/prescriptions/<%= rx._id %>/delete" style="display:inline; margin: 0;">
-                    <button type="submit" class="btn btn-small" style="background-color: #dc2626; font-size: 11px;" onclick="return confirm('Delete this prescription?')">Delete</button>
-                  </form>
-                </td>
-              </tr>
-            <% }); %>
+              <%- include("partials/prescription-row", { rx }) %>
+            <% }) %>
           </tbody>
+
         </table>
       </div>
-      <div class="pagination-controls">
-        <% if (totalPages > 1) { %>
-          <%- renderPagination(page, totalPages) %>
-        <% } %>
+
+      <!-- PAGINATION -->
+      <div id="pagination-container">
+        <%- renderPagination(req, "/prescriptions", page, totalPages) %>
       </div>
-      <p class="record-count">Showing <%= prescriptions.length %> of <%= totalCount %> prescription<%= totalCount !== 1 ? 's' : '' %></p>
-      <!-- Per-page dropdown at bottom (only one instance) -->
-      <div class="perpage-controls" style="margin-top:8px; text-align:right; font-size:12px;">
-        <label for="page-size" style="margin-right:4px;">Per page:</label>
-        <select id="page-size" name="limit" style="font-size:12px; padding:2px 6px;" onchange="window.location.href='/prescriptions?<%= paginationQuery(page) %>&limit='+this.value">
-          <option value="10" <%= limit == 10 ? 'selected' : '' %>>10</option>
-          <option value="25" <%= limit == 25 ? 'selected' : '' %>>25</option>
-          <option value="50" <%= limit == 50 ? 'selected' : '' %>>50</option>
-          <option value="100" <%= limit == 100 ? 'selected' : '' %>>100</option>
-        </select>
-      </div>
-  <script>
-    // AJAX live update logic for prescriptions
-    document.getElementById('prescription-search-form').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const form = e.target;
-      const params = new URLSearchParams(new FormData(form));
-      params.append('ajax', '1');
-      fetch('/prescriptions?' + params.toString())
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById('prescriptions-table-body').innerHTML = data.rowsHtml;
-          document.querySelector('.record-count').textContent = `Showing ${data.count} of ${data.totalCount} prescriptions`;
-          document.querySelector('.pagination-controls').innerHTML = data.paginationHtml;
-        });
-    });
-  </script>
+
+      <!-- COUNT -->
+      <p class="record-count" id="result-count">
+        Showing <%= prescriptions.length %> of <%= totalCount %> prescription<%= totalCount !== 1 ? "s" : "" %>
+      </p>
+
     <% } %>
+
   </div>
 
-  <footer>
-    <p>&copy; 2025 Medical Database Management System</p>
-  </footer>
+  <script>
+    const sortButtons = document.querySelectorAll(".table-sort");
+    const sortHidden = document.getElementById("sort-hidden");
+    const orderHidden = document.getElementById("order-hidden");
+    const filterForm = document.getElementById("filter-form");
+
+    function applySortState() {
+      sortButtons.forEach(btn => {
+        const isActive = btn.dataset.sort === sortHidden.value;
+        btn.classList.toggle("active", isActive);
+        btn.classList.toggle("asc", isActive && orderHidden.value === "asc");
+        btn.classList.toggle("desc", isActive && orderHidden.value === "desc");
+      });
+    }
+    applySortState();
+
+    sortButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const field = btn.dataset.sort;
+        if (sortHidden.value === field) {
+          orderHidden.value = orderHidden.value === "asc" ? "desc" : "asc";
+        } else {
+          sortHidden.value = field;
+          orderHidden.value = field === "medicationName" ? "asc" : "desc";
+        }
+        applySortState();
+        // AJAX change event (table-ajax.js will intercept); prevent double submits
+        filterForm.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    });
+  </script>
+
+  <style>
+    .table-sort,
+    .table-sort:visited {
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      font: inherit;
+      font-weight: 800;
+      color: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+      min-width: 90px;
+    }
+    .table-sort .arrow {
+      font-size: 10px;
+      width: 10px;
+      display: inline-block;
+      transition: transform 0.2s, opacity 0.2s;
+      opacity: 0.4;
+    }
+    .table-sort:hover {
+      text-decoration: underline;
+    }
+    .table-sort.active .arrow {
+      opacity: 1;
+    }
+    .table-sort.active.desc .arrow {
+      transform: rotate(180deg);
+    }
+  </style>
+
 </body>
 </html>

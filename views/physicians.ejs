@@ -4,177 +4,178 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Physicians - Medical DB</title>
+
   <link rel="stylesheet" href="/style.css">
   <link rel="stylesheet" href="/smart-search.css">
 </head>
 <body>
-  <nav class="navbar">
-    <div class="container">
-      <h1 class="logo">🏥 Medical DB</h1>
-      <ul class="nav-links">
-        <li><a href="/patients">Patients</a></li>
-        <li><a href="/physicians" class="active">Physicians</a></li>
-        <li><a href="/prescriptions">Prescriptions</a></li>
-        <li><a href="/appointments">Appointments</a></li>
-        <li><a href="/billings">Billings</a></li>
-        <li><a href="/logout">Logout</a></li>
-      </ul>
-    </div>
-  </nav>
+
+  <!-- NAVBAR -->
+  <%- include("partials/navbar", { activePage: "physicians" }) %>
+
 
   <div class="container">
+
+    <!-- HEADER -->
     <div class="page-header">
       <h2>Physicians</h2>
-      <a href="/" class="btn btn-secondary">Back Home</a>
+      <div>
+        <a href="/" class="btn btn-secondary">Back Home</a>
+      </div>
     </div>
 
-    <!-- Main Search & Filter Bar -->
-    <div class="filter-section">
-      <form method="GET" id="filter-form" class="filter-form">
-        <div class="filter-group">
-          <div class="filter-field">
-            <label for="search-filter">Search</label>
-            <input 
-              type="text" 
-              id="search-filter"
-              name="search"
-              placeholder="Name, specialization, email, phone..."
-              value="<%= search %>"
-              autocomplete="off"
-            >
-          </div>
-          <div class="filter-field">
-            <label for="spec-filter">Specialization</label>
-            <select id="spec-filter" name="specialization">
-              <option value="">All</option>
-              <% allSpecs.forEach(spec => { %>
-                <option value="<%= spec %>" <%= specialization === spec ? 'selected' : '' %>><%= spec %></option>
-              <% }); %>
-            </select>
-          </div>
-          <div class="filter-field">
-            <label for="sort-filter">Sort By</label>
-            <select id="sort-filter" name="sort">
-              <option value="name" <%= sort === 'name' ? 'selected' : '' %>>Name (A-Z)</option>
-              <option value="specialization" <%= sort === 'specialization' ? 'selected' : '' %>>Specialization</option>
-            </select>
-          </div>
-        </div>
-        <div class="filter-actions">
-          <button type="submit" class="btn-apply">Apply Filters</button>
-          <button type="reset" class="btn-reset" onclick="window.location.href='/physicians'">Reset</button>
-        </div>
+    <!-- SEARCH + FILTER BAR -->
+    <div class="searchbar-wrapper">
+      <form id="filter-form" method="GET" class="searchbar-modern">
+
+        <!-- MAIN SEARCH -->
+        <input
+          type="text"
+          name="search"
+          class="searchbar-main"
+          placeholder="Search physicians..."
+          value="<%= search %>"
+          autocomplete="off"
+        >
+
+        <!-- SPECIALIZATION -->
+        <select name="specialization" class="bubble">
+          <option value="">Specialization</option>
+          <% allSpecs.forEach(spec => { %>
+            <option value="<%= spec %>" <%= specialization === spec ? "selected" : "" %>>
+              <%= spec %>
+            </option>
+          <% }) %>
+        </select>
+
+        <input type="hidden" name="sort" id="sort-hidden" value="<%= sort %>">
+        <input type="hidden" name="order" id="order-hidden" value="<%= order %>">
+
+        <button type="submit" class="btn-apply bubble">Apply</button>
+
       </form>
     </div>
 
+
+    <!-- NO RESULTS -->
     <% if (physicians.length === 0) { %>
       <div class="no-data">
         <p>No physicians found.</p>
       </div>
     <% } else { %>
-      <div class="table-wrapper" id="physicians-table-wrapper">
+
+      <!-- TABLE -->
+      <div class="table-wrapper">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Specialization</th>
-              <th>Email</th>
+              <th>
+                <button type="button" class="table-sort <%= sort === 'name' ? 'active ' + order : '' %>" data-sort="name">
+                  Name <span class="arrow">▲</span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="table-sort <%= sort === 'specialization' ? 'active ' + order : '' %>" data-sort="specialization">
+                  Specialization <span class="arrow">▲</span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="table-sort <%= sort === 'email' ? 'active ' + order : '' %>" data-sort="email">
+                  Email <span class="arrow">▲</span>
+                </button>
+              </th>
               <th>Phone</th>
-              <th>Actions</th>
+              <th>Schedule</th>
             </tr>
           </thead>
+
+          <!-- AJAX WILL UPDATE THIS -->
           <tbody id="physicians-table-body">
-            <% physicians.forEach(physician => { %>
-              <tr>
-                <td><strong><%= physician.name %></strong></td>
-                <td><%= physician.specialization %></td>
-                <td><%= physician.contactInfo?.email || 'N/A' %></td>
-                <td><%= physician.contactInfo?.phone || 'N/A' %></td>
-                <td>
-                  <button class="btn btn-small" onclick="showSchedule(event)">View Schedule</button>
-                  <input type="hidden" class="schedule-data" value="<%= physician.name %>" data-schedule="<%= JSON.stringify(physician.schedule || []).replace(/"/g, '&quot;') %>">
-                </td>
-              </tr>
-            <% }); %>
+            <% physicians.forEach(doc => { %>
+              <%- include("partials/physician-row", { physician: doc }) %>
+            <% }) %>
           </tbody>
         </table>
       </div>
-      <div class="pagination-controls">
-        <% if (totalPages > 1) { %>
-          <%- renderPagination(page, totalPages) %>
-        <% } %>
+
+      <!-- PAGINATION -->
+      <div id="pagination-container">
+        <%- renderPagination(req, "/physicians", page, totalPages) %>
       </div>
-      <p class="record-count">Showing <%= physicians.length %> of <%= totalCount %> physician<%= totalCount !== 1 ? 's' : '' %></p>
-      <!-- Per-page dropdown at bottom (only one instance) -->
-      <div class="perpage-controls" style="margin-top:8px; text-align:right; font-size:12px;">
-        <label for="page-size" style="margin-right:4px;">Per page:</label>
-        <select id="page-size" name="limit" style="font-size:12px; padding:2px 6px;" onchange="window.location.href='/physicians?<%= paginationQuery(page) %>&limit='+this.value">
-          <option value="10" <%= limit == 10 ? 'selected' : '' %>>10</option>
-          <option value="25" <%= limit == 25 ? 'selected' : '' %>>25</option>
-          <option value="50" <%= limit == 50 ? 'selected' : '' %>>50</option>
-          <option value="100" <%= limit == 100 ? 'selected' : '' %>>100</option>
-        </select>
-      </div>
+
+      <!-- COUNT INDICATOR -->
+      <p class="record-count" id="result-count">
+        Showing <%= physicians.length %> of <%= totalCount %> physician<%= totalCount !== 1 ? "s" : "" %>
+      </p>
+
     <% } %>
+
   </div>
-
-  <div id="scheduleModal" class="modal" style="display:none;">
-    <div class="modal-content">
-      <span class="close" onclick="closeModal()">×</span>
-      <h3 id="physicianName"></h3>
-      <div id="scheduleList"></div>
-    </div>
-  </div>
-
-  <script>
-    // Live AJAX search/filter
-    const filterForm = document.getElementById('filter-form');
-    const tableBody = document.getElementById('physicians-table-body');
-    const tableWrapper = document.getElementById('physicians-table-wrapper');
-    let ajaxTimeout;
-    filterForm.addEventListener('input', function(e) {
-      clearTimeout(ajaxTimeout);
-      ajaxTimeout = setTimeout(() => {
-        const params = new URLSearchParams(new FormData(filterForm)).toString();
-        fetch(`/physicians?${params}&ajax=1`)
-          .then(res => res.json())
-          .then(data => {
-            tableBody.innerHTML = data.rowsHtml;
-            document.querySelector('.record-count').textContent = `Showing ${data.count} of ${data.totalCount} physicians`;
-            if (data.paginationHtml) {
-              document.querySelector('.pagination-controls').innerHTML = data.paginationHtml;
-            }
-          });
-      }, 300);
-    });
-
-    function showSchedule(event) {
-      const btn = event.target;
-      const hidden = btn.parentElement.querySelector('.schedule-data');
-      const name = hidden.value;
-      const scheduleJson = hidden.getAttribute('data-schedule');
-      const scheduleArray = JSON.parse(scheduleJson.replace(/&quot;/g, '"'));
-      
-      document.getElementById('physicianName').textContent = name + ' - Schedule';
-      const html = scheduleArray.map(s => '<li>' + s + '</li>').join('');
-      document.getElementById('scheduleList').innerHTML = '<ul>' + html + '</ul>';
-      document.getElementById('scheduleModal').style.display = 'block';
-    }
-
-    function closeModal() {
-      document.getElementById('scheduleModal').style.display = 'none';
-    }
-
-    window.onclick = function(event) {
-      const modal = document.getElementById('scheduleModal');
-      if (event.target === modal) {
-        modal.style.display = 'none';
-      }
-    }
-  </script>
 
   <footer>
     <p>&copy; 2025 Medical Database Management System</p>
   </footer>
+
+  <script src="/js/table-ajax.js"></script>
+  <script>
+    // Column sorting (works with AJAX form)
+    const sortButtons = document.querySelectorAll(".table-sort");
+    const sortHidden = document.getElementById("sort-hidden");
+    const orderHidden = document.getElementById("order-hidden");
+    const filterForm = document.getElementById("filter-form");
+
+    function applySortState() {
+      sortButtons.forEach(btn => {
+        const active = btn.dataset.sort === sortHidden.value;
+        btn.classList.toggle("active", active);
+        btn.classList.toggle("asc", active && orderHidden.value === "asc");
+        btn.classList.toggle("desc", active && orderHidden.value === "desc");
+      });
+    }
+    applySortState();
+
+    sortButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const field = btn.dataset.sort;
+        if (sortHidden.value === field) {
+          orderHidden.value = orderHidden.value === "asc" ? "desc" : "asc";
+        } else {
+          sortHidden.value = field;
+          orderHidden.value = field === "name" ? "asc" : "desc";
+        }
+        applySortState();
+        filterForm.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    });
+  </script>
+
+  <style>
+    .table-sort {
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      font: inherit;
+      font-weight: 700;
+      color: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+      min-width: 90px;
+    }
+    .table-sort .arrow {
+      font-size: 10px;
+      width: 10px;
+      display: inline-block;
+      transition: transform 0.2s, opacity 0.2s;
+      opacity: 0.4;
+    }
+    .table-sort:hover { text-decoration: underline; }
+    .table-sort.active .arrow { opacity: 1; }
+    .table-sort.active.desc .arrow { transform: rotate(180deg); }
+  </style>
+
 </body>
 </html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Billing Detail - Medical DB</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+  <%- include("partials/navbar", { activePage: "billings" }) %>
+
+  <div class="container">
+    <div class="page-header">
+      <h2>Billing Detail</h2>
+      <div style="display:flex; gap:10px;">
+        <a href="/billings" class="btn btn-secondary">Back to Billings</a>
+        <% if (billingsCanEdit) { %>
+          <a href="/billings/<%= billing._id %>/edit" class="btn btn-primary">Edit Billing</a>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-section">
+        <h3>Billing Info</h3>
+        <div class="info-card">
+          <div class="info-row"><span class="label">Status:</span><span class="value"><span class="badge badge-<%= billing.status %>"><%= billing.status %></span></span></div>
+          <div class="info-row"><span class="label">Amount:</span><span class="value"><%= Number(billing.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></span></div>
+          <div class="info-row"><span class="label">Date Issued:</span><span class="value"><%= billing.createdAt ? new Date(billing.createdAt).toLocaleDateString() : "—" %></span></div>
+          <div class="info-row"><span class="label">Payment Date:</span><span class="value"><%= billing.paymentDate ? new Date(billing.paymentDate).toLocaleDateString() : "—" %></span></div>
+          <div class="info-row"><span class="label">Insurance:</span><span class="value"><%= billing.InsuranceProvider || "N/A" %></span></div>
+          <div class="info-row"><span class="label">Policy #:</span><span class="value"><%= billing.policyNumber || "N/A" %></span></div>
+          <div class="info-row"><span class="label">Coverage:</span><span class="value"><%= billing.coverageAmount != null ? billing.coverageAmount : "N/A" %></span></div>
+          <div class="info-row"><span class="label">Updated:</span><span class="value"><%= billing.updatedAt ? new Date(billing.updatedAt).toLocaleString() : "—" %></span></div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h3>Patient</h3>
+        <div class="info-card">
+          <% if (billing.patientID) { %>
+            <div class="info-row"><span class="label">Name:</span><span class="value"><a href="/patients/<%= billing.patientID._id %>"><%= billing.patientID.name %></a></span></div>
+            <div class="info-row"><span class="label">Email:</span><span class="value"><%= billing.patientID.contactInfo?.email || "N/A" %></span></div>
+            <div class="info-row"><span class="label">Phone:</span><span class="value"><%= billing.patientID.contactInfo?.phone || "N/A" %></span></div>
+          <% } else { %>
+            <p class="no-data-text">No patient linked.</p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-grid">
+      <div class="section">
+        <h3>Appointment</h3>
+        <% if (!appointment) { %>
+          <p class="no-data-text">Appointment not found.</p>
+        <% } else { %>
+          <div class="info-card">
+            <div class="info-row"><span class="label">Date:</span><span class="value"><%= new Date(appointment.date).toLocaleString() %></span></div>
+            <div class="info-row"><span class="label">Summary:</span><span class="value"><%= appointment.summary || "No summary" %></span></div>
+            <div class="info-row"><span class="label">Notes:</span><span class="value"><%= appointment.notes || "No notes" %></span></div>
+            <% if (appointment.patientID) { %>
+              <div class="info-row"><span class="label">Patient:</span><span class="value"><a href="/patients/<%= appointment.patientID._id %>"><%= appointment.patientID.name %></a></span></div>
+            <% } %>
+            <% if (appointment.physicianID) { %>
+              <div class="info-row"><span class="label">Physician:</span><span class="value"><a href="/physicians/<%= appointment.physicianID._id %>"><%= appointment.physicianID.name %></a></span></div>
+            <% } %>
+            <div style="margin-top:10px;">
+              <a class="btn btn-small" href="/appointments/<%= appointment._id %>">View Appointment</a>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>&copy; 2025 Medical Database Management System</p>
+  </footer>
+</body>
+</html>

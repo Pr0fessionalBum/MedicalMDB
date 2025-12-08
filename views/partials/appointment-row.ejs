@@ -1,0 +1,62 @@
+<% appointments.forEach(appt => { %>
+<tr>
+  <td>
+    <div><%= appt.date ? new Date(appt.date).toLocaleDateString() : "" %></div>
+  </td>
+
+  <td>
+    <% if (appt.patientID?._id) { %>
+      <a href="/patients/<%= appt.patientID._id %>"><%= appt.patientID.name %></a>
+    <% } else { %>
+      Unknown
+    <% } %>
+  </td>
+
+  <td><%= appt.physicianID?.name || "Unknown" %></td>
+
+  <td><%= appt.summary || "No summary" %></td>
+
+  <td>
+    <% if (appt.diagnoses && appt.diagnoses.length) { %>
+      <div style="display:flex; flex-wrap:wrap; gap:6px;">
+        <% appt.diagnoses.slice(0, 3).forEach(dx => { %>
+          <span class="badge" style="background:#e0e7ff;color:#1e3a8a;">
+            <%= dx.code || "Dx" %>: <%= dx.description || "No description" %>
+          </span>
+        <% }) %>
+        <% if (appt.diagnoses.length > 3) { %>
+          <span style="color:#6b7280;">+<%= appt.diagnoses.length - 3 %> more</span>
+        <% } %>
+      </div>
+    <% } else { %>
+      <span style="color:#6b7280;">No diagnoses</span>
+    <% } %>
+  </td>
+
+  <td>
+    <% if (appt.notes) { %>
+      <button class="btn btn-small"
+              data-notes="<%= appt.notes || 'No notes recorded.' %>"
+              onclick="showNotes(this)">
+        Notes
+      </button>
+    <% } else { %>
+      <span style="color:#6b7280;">No notes</span>
+    <% } %>
+  </td>
+
+  <td>
+    <a class="btn btn-small btn-ghost" href="/appointments/<%= appt._id %>">View</a>
+    <form method="POST" action="/appointments/<%= appt._id %>/delete" style="display:inline;">
+      <button class="btn btn-small"
+              style="background:#dc2626;"
+              onclick="return confirm('Delete this appointment?')">
+        Delete
+      </button>
+    </form>
+    <% if (apptsCanEdit) { %>
+      <a class="btn btn-small" href="/appointments/<%= appt._id %>/edit">Edit</a>
+    <% } %>
+  </td>
+</tr>
+<% }) %>

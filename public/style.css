@@ -144,6 +144,18 @@ body {
   background-color: #475569;
 }
 
+.btn-ghost {
+  background: white;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+}
+
+.btn-ghost:hover {
+  background: #e0e7ff;
+  color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
 .btn-small {
   padding: 6px 12px;
   font-size: 12px;
@@ -184,6 +196,68 @@ body {
 
 .sort-select {
   flex: 0 1 auto;
+}
+
+/* Form cards (shared across create/edit pages) */
+.form-container {
+  background: #fff;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text-color);
+}
+
+.form-container input,
+.form-container select,
+.form-container textarea {
+  padding: 12px 15px;
+  border-radius: 12px;
+  border: 1px solid #CBD5E1;
+  background: #F8FAFC;
+  transition: all 0.2s ease;
+  font-size: 15px;
+}
+
+.form-container input:focus,
+.form-container select:focus,
+.form-container textarea:focus {
+  border-color: var(--primary-color);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+  outline: none;
+}
+
+.form-divider {
+  margin: 25px 0 10px;
+  font-weight: 600;
+  color: var(--primary-color);
+  border-bottom: 2px solid #E2E8F0;
+  padding-bottom: 6px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
 }
 
 /* Tables */
@@ -495,6 +569,140 @@ footer {
   margin-top: 50px;
 }
 
+/* ===================================== */
+/* PAGINATION (NEW + FIXED + BEAUTIFUL) */
+/* ===================================== */
+
+.pagination-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 18px;
+  margin-bottom: 12px;
+}
+
+.pagination-pages {
+  display: flex;
+  gap: 12px; /* Spacing between page numbers */
+  align-items: center;
+}
+
+.page-link {
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  text-decoration: none;
+  font-size: 14px;
+  color: var(--text-color);
+  transition: 0.2s ease-in-out;
+  border: 1px solid var(--border-color);
+}
+
+.page-link:hover {
+  background: #e2e8f0;
+}
+
+.page-link.active {
+  background: var(--primary-color);
+  color: white !important;
+  font-weight: 700;
+  border-color: var(--primary-color);
+}
+
+.page-dot {
+  opacity: 0.6;
+  padding: 0 4px;
+  font-size: 14px;
+}
+
+.pagination-input {
+  width: 55px;
+  padding: 5px;
+  font-size: 14px;
+  margin-left: 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.pagination-per-page {
+  margin-top: 14px;
+  text-align: right;
+  font-size: 14px;
+}
+
+.pagination-per-page select {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  font-size: 14px;
+  background: white;
+}
+
+.searchbar-wrapper {
+  width: 100%;
+  margin-bottom: 25px;
+}
+
+.searchbar-modern {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+
+  /* Floating bar look */
+  background: rgba(255, 255, 255, 0.9);
+  padding: 12px 16px;
+  border-radius: 40px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+  backdrop-filter: blur(6px);
+}
+
+/* Main search input (dominant bubble) */
+.searchbar-main {
+  flex: 1;
+  padding: 12px 18px;
+  border-radius: 30px;
+  border: none;
+  background: #f1f5f9;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.searchbar-main:focus {
+  outline: none;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+/* Small filter bubbles */
+.bubble {
+  padding: 10px 16px;
+  border-radius: 30px;
+  border: none;
+  background: #f1f5f9;
+  font-size: 14px;
+  min-width: 100px;
+  transition: all 0.2s ease;
+}
+
+.bubble:focus {
+  outline: none;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.btn-apply {
+  background: var(--primary-color);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-apply:hover {
+  background: #1d4ed8;
+}
+
+
 /* Responsive */
 @media (max-width: 768px) {
   .navbar .container {
@@ -546,4 +754,20 @@ footer {
   .btn {
     width: 100%;
   }
+
+  .searchbar-modern {
+    flex-wrap: wrap;
+    border-radius: 24px;
+    gap: 10px;
+  }
+
+  .bubble, .searchbar-main {
+    flex: 1 1 100%;
+  }
+
+  .btn-apply {
+    width: 100%;
+  }
+
+  
 }

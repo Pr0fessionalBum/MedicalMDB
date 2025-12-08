@@ -9,7 +9,7 @@ const prescriptionSchema = new mongoose.Schema({
   instructions: String,
   startDate: { type: Date, default: Date.now },
   endDate: Date,
-  status: { type: String, enum: ['active', 'completed', 'discontinued', 'pending'], default: 'active' },
+  status: { type: String, enum: ['active', 'completed'], default: 'active' },
   medicationCode: String, // optional canonical code (e.g., RxNorm)
   frequency: String,
   type: String,

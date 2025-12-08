@@ -1,69 +1,81 @@
-// /utils/ppagination.js
+// /utils/pagination.js
+export function renderPagination(req, baseRoute, currentPage, totalPages) {
+  if (totalPages <= 1) return "";
 
-export function buildPaginationQuery(query, page) {
-  const params = { ...query, page };
-  return Object.entries(params)
-    .map(([k, v]) => `${k}=${encodeURIComponent(v ?? "")}`)
-    .join("&");
-}
+  const queryParams = { ...req.query };
+  delete queryParams.page;
+  delete queryParams.ajax;
 
-export function renderPagination(req, baseRoute, current, total, includePerPage = false) {
-  if (total <= 1) return "";
+  const queryString = new URLSearchParams(queryParams).toString();
+  const qs = queryString ? `&${queryString}` : "";
 
-  let html = `<nav class="pagination-nav">`;
-
-  let start = Math.max(1, current - 2);
-  let end = Math.min(total, start + 4);
-
-  if (end - start < 4) start = Math.max(1, end - 4);
-
-  // FIRST PAGE
-  if (start > 1) {
-    html += `<a href="${baseRoute}?${buildPaginationQuery(req.query, 1)}" class="pagination-link">1</a>`;
-  }
-
-  // NUMBER BLOCK
-  for (let p = start; p <= end; p++) {
-    html += `<a href="${baseRoute}?${buildPaginationQuery(req.query, p)}" class="pagination-link${
-      p === current ? " active" : ""
-    }">${p}</a>`;
-  }
-
-  // LAST PAGE
-  if (end < total) {
-    html += `<a href="${baseRoute}?${buildPaginationQuery(req.query, total)}" class="pagination-link">Last</a>`;
-  }
-
-  // INPUT JUMP
-  html += `
-    <input type="number"
-      min="1" max="${total}"
-      value="${current}"
-      class="pagination-input"
-      style="width:40px; font-size:12px; margin-left:8px;"
-      onchange="window.location.href='${baseRoute}?${buildPaginationQuery(req.query, "")}&page='+this.value">
+  let html = `
+  <nav class="pagination-nav">
+    <div class="pagination-pages">
   `;
 
-  html += `</nav>`;
+  // ---- page window logic (5 numbers total) ----
+  let start = Math.max(1, currentPage - 2);
+  let end = Math.min(totalPages, currentPage + 2);
 
-  // OPTIONAL per-page dropdown (use only if needed)
-  if (includePerPage) {
-    const currentLimit = parseInt(req.query.limit || 10);
-    html += `
-      <div class="perpage-controls" style="margin-top:8px; text-align:right; font-size:12px;">
-        <label>Per page:</label>
-        <select onchange="window.location.href='${baseRoute}?${buildPaginationQuery(
-          req.query,
-          current
-        )}&limit='+this.value">
-          <option value="10"  ${currentLimit === 10 ? "selected" : ""}>10</option>
-          <option value="25"  ${currentLimit === 25 ? "selected" : ""}>25</option>
-          <option value="50"  ${currentLimit === 50 ? "selected" : ""}>50</option>
-          <option value="100" ${currentLimit === 100 ? "selected" : ""}>100</option>
-        </select>
-      </div>
-    `;
+  if (end - start < 4) {
+    if (start === 1) end = Math.min(totalPages, start + 4);
+    else start = Math.max(1, end - 4);
   }
 
+  // FIRST PAGE BUTTON IF NEEDED
+  if (start > 1) {
+    html += pageButton(1, currentPage, baseRoute, qs);
+    html += `<span class="page-dot">...</span>`;
+  }
+
+  // MAIN PAGE WINDOW
+  for (let p = start; p <= end; p++) {
+    html += pageButton(p, currentPage, baseRoute, qs);
+  }
+
+  // LAST PAGE BUTTON
+  if (end < totalPages) {
+    html += `<span class="page-dot">...</span>`;
+    html += pageButton(totalPages, currentPage, baseRoute, qs);
+  }
+
+  html += `
+    </div>
+
+    <div class="pagination-goto">
+      <input 
+        type="number" 
+        min="1" 
+        max="${totalPages}" 
+        value="${currentPage}" 
+        class="pagination-input"
+        onchange="window.location.href='${baseRoute}?page=' + this.value + '${qs}'">
+    </div>
+  </nav>
+
+  <div class="pagination-per-page">
+    <label>Per page:</label>
+    <select id="page-size-selector"
+      onchange="window.location.href='${baseRoute}?page=1${qs}&limit=' + this.value">
+      <option value="10" ${req.query.limit == 10 ? "selected" : ""}>10</option>
+      <option value="25" ${req.query.limit == 25 ? "selected" : ""}>25</option>
+      <option value="50" ${req.query.limit == 50 ? "selected" : ""}>50</option>
+      <option value="100" ${req.query.limit == 100 ? 'selected' : ""}>100</option>
+    </select>
+  </div>
+  `;
+
   return html;
+}
+
+function pageButton(pageNum, currentPage, baseRoute, qs) {
+  const activeClass = pageNum === currentPage ? "active" : "";
+  return `
+    <a 
+      href="${baseRoute}?page=${pageNum}${qs}" 
+      class="page-link ${activeClass}">
+      ${pageNum}
+    </a>
+  `;
 }

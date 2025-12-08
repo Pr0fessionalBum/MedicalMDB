@@ -105,7 +105,7 @@
   <div class="login-container">
     <div class="login-card">
       <h1>🏥 Medical DB</h1>
-      <p>Physician Login</p>
+      <p>Physician or Patient Login</p>
 
       <% if (error) { %>
         <div class="error-message"><%= error %></div>
@@ -113,8 +113,8 @@
 
       <form method="POST" action="/login">
         <div class="form-group">
-          <label for="username">Username</label>
-          <input type="text" id="username" name="username" required placeholder="Enter your username">
+          <label for="username">Username / Email</label>
+          <input type="text" id="username" name="username" required placeholder="Physician username or patient email">
         </div>
 
         <div class="form-group">
@@ -126,9 +126,22 @@
       </form>
 
       <div class="demo-info">
-        <strong>Demo Credentials:</strong><br>
-        Username: <code>demo_doctor</code><br>
-        Password: <code>password123</code>
+        <strong>Demo Credentials (Physicians):</strong><br>
+        <% if (demoUsers && demoUsers.length) { %>
+          <% demoUsers.forEach(user => { %>
+            <div>Username: <code><%= user.username %></code> (<%= user.role || 'physician' %>)</div>
+          <% }) %>
+        <% } else { %>
+          <div>Username: <code>demo_doctor</code> (physician)</div>
+          <div>Username: <code>demo_admin</code> (admin)</div>
+        <% } %>
+        <div>Password: <code>password123</code></div>
+        <div style="margin-top:6px; color:#16a34a;">
+          All seeded physicians use password123.
+        </div>
+        <div style="margin-top:12px; color:#1e293b;">
+          <strong>Patient guest login:</strong> use the patient's email as username and password <code>password123</code> (testing only).
+        </div>
       </div>
     </div>
   </div>

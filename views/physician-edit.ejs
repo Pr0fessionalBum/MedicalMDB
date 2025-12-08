@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Physician - <%= physician.name %></title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+  <%- include("partials/navbar", { activePage: "physicians" }) %>
+
+  <div class="container">
+    <div class="page-header">
+      <h2>Edit Physician</h2>
+      <div>
+        <a href="/physicians/<%= physician._id %>" class="btn btn-secondary">Cancel</a>
+      </div>
+    </div>
+
+    <div class="form-container">
+      <form method="POST" action="/physicians/<%= physician._id %>/edit" class="form">
+        <div class="form-group">
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" value="<%= physician.name %>" required>
+        </div>
+
+        <div class="form-group">
+          <label for="specialization">Specialization</label>
+          <input type="text" id="specialization" name="specialization" value="<%= physician.specialization %>" required>
+        </div>
+
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" value="<%= physician.username %>" required>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" value="<%= physician.contactInfo?.email || "" %>">
+        </div>
+
+        <div class="form-group">
+          <label for="phone">Phone</label>
+          <input type="text" id="phone" name="phone" value="<%= physician.contactInfo?.phone || "" %>">
+        </div>
+
+        <div class="form-group">
+          <label for="schedule">Schedule (one per line)</label>
+          <textarea id="schedule" name="schedule" rows="5"><%= (physician.schedule || []).join("\n") %></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save</button>
+          <a href="/physicians/<%= physician._id %>" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 Medical Database Management System</p>
+  </footer>
+  
+</body>
+</html>

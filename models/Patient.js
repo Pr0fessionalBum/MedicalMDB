@@ -1,5 +1,6 @@
 // models/Patient.js
 import mongoose from "mongoose";
+import bcrypt from "bcrypt";
 
 const patientSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -11,6 +12,8 @@ const patientSchema = new mongoose.Schema({
     email: String,
     address: String
   },
+  // simple guest login credentials (email used as username)
+  passwordHash: { type: String },
   // Soft delete support: when true, patient is considered deleted
   isDeleted: { type: Boolean, default: false },
   deletedAt: Date,
@@ -36,6 +39,20 @@ patientSchema.pre('save', function() {
     // ignore and continue
   }
 });
+
+// Hash passwordHash if provided as plaintext
+patientSchema.pre('save', async function() {
+  if (!this.isModified('passwordHash')) return;
+  if (!this.passwordHash) return;
+  if (typeof this.passwordHash === "string" && this.passwordHash.startsWith("$2")) return;
+  const hash = await bcrypt.hash(this.passwordHash, 10);
+  this.passwordHash = hash;
+});
+
+patientSchema.methods.verifyPassword = async function(password) {
+  if (!this.passwordHash) return false;
+  return bcrypt.compare(password, this.passwordHash);
+};
 
 // Compute current medications on the patient by aggregating Prescription
 patientSchema.methods.getCurrentMedications = async function() {
@@ -80,3 +97,8 @@ patientSchema.methods.getMedicalHistory = async function() {
 
 const Patient = mongoose.model("Patient", patientSchema);
 export default Patient;
+
+// Indexes to speed lookups by name/email/phone for search and guest filters
+patientSchema.index({ name: 1 });
+patientSchema.index({ "contactInfo.email": 1 });
+patientSchema.index({ "contactInfo.phone": 1 });

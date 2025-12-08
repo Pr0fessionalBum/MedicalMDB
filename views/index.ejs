@@ -7,21 +7,8 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <nav class="navbar">
-    <div class="container">
-      <h1 class="logo">🏥 Medical DB</h1>
-      <ul class="nav-links">
-        <li><a href="/patients">Patients</a></li>
-        <li><a href="/physicians">Physicians</a></li>
-        <li><a href="/prescriptions">Prescriptions</a></li>
-        <li><a href="/appointments">Appointments</a></li>
-        <li><a href="/billings">Billings</a></li>
-        <% if (user) { %>
-          <li><a href="/logout">Logout</a></li>
-        <% } %>
-      </ul>
-    </div>
-  </nav>
+
+  <%- include("partials/navbar", { activePage: "home" }) %>
 
   <div class="container">
     <div class="hero">
@@ -38,21 +25,21 @@
       <div class="stat-card">
         <h3>Quick Links</h3>
         <ul>
-          <li><a href="/patients">👥 Patients Database</a></li>
-          <li><a href="/physicians">👨‍⚕️ Physician Directory</a></li>
-          <li><a href="/prescriptions">💊 Prescriptions</a></li>
-          <li><a href="/appointments">📅 Appointments</a></li>
-          <li><a href="/billings">💰 Billing Records</a></li>
+          <li><a href="/patients">Patients Database</a></li>
+          <li><a href="/physicians">Physician Directory</a></li>
+          <li><a href="/prescriptions">Prescriptions</a></li>
+          <li><a href="/appointments">Appointments</a></li>
+          <li><a href="/billings">Billing Records</a></li>
         </ul>
       </div>
       <div class="stat-card">
         <h3>Features</h3>
         <ul>
-          <li>✓ Search across records</li>
-          <li>✓ Sort by multiple fields</li>
-          <li>✓ View detailed patient records</li>
-          <li>✓ Manage appointments & prescriptions</li>
-          <li>✓ Track billing status</li>
+          <li>Search across records</li>
+          <li>Sort by multiple fields</li>
+          <li>View detailed patient records</li>
+          <li>Manage appointments & prescriptions</li>
+          <li>Track billing status</li>
         </ul>
       </div>
     </div>

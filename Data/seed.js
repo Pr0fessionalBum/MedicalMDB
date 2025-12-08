@@ -3,11 +3,11 @@ import { faker } from '@faker-js/faker';
 import fs from 'fs/promises';
 import bcrypt from 'bcrypt';
 
-import Patient from './models/Patient.js';
-import Physician from './models/Physician.js';
-import Prescription from './models/Prescription.js';
-import Appointment from './models/Appointment.js';
-import Billing from './models/Billing.js';
+import Patient from '../models/Patient.js';
+import Physician from '../models/Physician.js';
+import Prescription from '../models/Prescription.js';
+import Appointment from '../models/Appointment.js';
+import Billing from '../models/Billing.js';
 import { 
   diagnosisOptions,
   generatePrescriptionWithFrequency,
@@ -17,8 +17,14 @@ import {
 const MONGO = 'mongodb://127.0.0.1:27017/medicalApp';
 
 // Load the meds dataset once at startup
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 async function loadMedications() {
-  const raw = await fs.readFile('./medicine.json', 'utf8');
+  const medsPath = path.join(__dirname, 'medicine.json');
+  const raw = await fs.readFile(medsPath, 'utf8');
   const data = JSON.parse(raw);
   const meds = Object.values(data).map(item => ({
     name: item["Name"],
@@ -35,7 +41,15 @@ function getRandomElement(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-async function seed({ patients = 10, physicians = 20, maxPrescriptions = 20, maxAppointments = 30 } = {}) {
+// Bias counts toward lower numbers (heavier weight on small values)
+function weightedCount(max, min = 1) {
+  const r = Math.random();
+  const skewed = Math.pow(r, 1.6); // >1 favors smaller numbers
+  const count = Math.floor(skewed * (max - min + 1)) + min;
+  return Math.min(Math.max(count, min), max);
+}
+
+async function seed({ patients = 10, physicians = 20, maxPrescriptions = 15, maxAppointments = 30 } = {}) {
   await mongoose.connect(MONGO, { dbName: 'medicalApp' });
   console.log('Connected to', MONGO);
 
@@ -44,6 +58,7 @@ async function seed({ patients = 10, physicians = 20, maxPrescriptions = 20, max
   await Prescription.deleteMany({});
   await Appointment.deleteMany({});
   await Billing.deleteMany({});
+  const patientPasswordHash = await bcrypt.hash("password123", 10);
 
   // Create physicians
   const physicianDocs = [];
@@ -83,9 +98,24 @@ async function seed({ patients = 10, physicians = 20, maxPrescriptions = 20, max
     physicianDocs.push(doc);
   }
 
+  // Add a seeded admin account for easy login
+  const adminDoc = new Physician({
+    name: "Demo Admin",
+    specialization: "Administration",
+    username: "demo_admin",
+    passwordHash: await bcrypt.hash("password123", 10),
+    role: "admin",
+    contactInfo: { email: "demo_admin@example.com", phone: faker.phone.number() },
+    schedule: []
+  });
+  await adminDoc.save();
+  physicianDocs.push(adminDoc);
+  console.log("  Created physician: demo_admin (Demo Admin, admin)");
+
   const allMeds = await loadMedications();
 
   const appointmentRecords = []; // collect appt + patient for billing and schedules
+  const patientInsuranceMap = new Map();
 
   // helper: pick an appointment date between patient's DOB and now,
   // biased toward more recent dates but occasionally older
@@ -156,30 +186,49 @@ async function seed({ patients = 10, physicians = 20, maxPrescriptions = 20, max
       gender: faker.person.sex(),
       contactInfo: {
         phone: faker.phone.number(),
-        email: faker.internet.email(),
+        email: faker.internet.email().toLowerCase(),
         address: faker.location.streetAddress()
-      }
+      },
+      passwordHash: patientPasswordHash
     });
     await patient.save();
+    // assign a small set of insurers for this patient (1-4, weighted to low)
+    const insurerChoices = new Set();
+    const insurerCount = weightedCount(4, 1);
+    while (insurerChoices.size < insurerCount) {
+      insurerChoices.add(faker.company.name());
+    }
+    patientInsuranceMap.set(patient._id.toString(), Array.from(insurerChoices));
 
     // Create prescriptions based on random meds from dataset
-    const rxCount = faker.number.int({ min: 1, max: maxPrescriptions });
+    const rxCount = weightedCount(maxPrescriptions, 1);
     for (let r = 0; r < rxCount; r++) {
       const med = getRandomElement(allMeds);
-      const dosage = med.mg; // or derive differently
-      // Use generic name for medicationName and for instructions/frequency
+      const dosage = med.mg;
       const { instructions, frequency } = generatePrescriptionWithFrequency(dosage, med.generic);
+
+      // Generate realistic start and end dates
+      // Start date: any time in the past 3 years
+      const startDate = faker.date.past({ years: 3 });
+      // Duration: 1 to 12 months
+      const durationMonths = faker.number.int({ min: 1, max: 12 });
+      const endDate = new Date(startDate);
+      endDate.setMonth(endDate.getMonth() + durationMonths);
+
+      // Determine status based on endDate
+      const now = new Date();
+      const status = endDate < now ? 'completed' : 'active';
 
       const pres = new Prescription({
         patientID: patient._id,
         physicianID: getRandomElement(physicianDocs)._id,
-        medicationName: med.generic, // use generic name instead of brand name
+        medicationName: med.generic,
         dosage,
         instructions,
-        startDate: faker.date.past({ years: 3 }),
-        endDate: null,
-        status: 'active',
-        medicationCode: med.generic,  // generic name/code
+        startDate,
+        endDate,
+        status,
+        medicationCode: med.generic,
         frequency,
         type: med.type || 'Oral'
       });
@@ -264,14 +313,15 @@ async function seed({ patients = 10, physicians = 20, maxPrescriptions = 20, max
     const phys = physicianDocs.find(p => p._id.toString() === rec.physicianId);
     const spec = phys?.specialization || 'General Practice';
   // Increase base fee dramatically to reflect higher billing amounts
-  const baseFee = 800; // was 80
+  const baseFee = 1500; // bumped up for higher bills
     const mult = specializationMultiplier[spec] || 1.0;
-  // add a larger variability to amounts so bills can range widely
-  const amount = Math.round(baseFee * mult + Math.floor(Math.random() * 600));
+  // add larger variability to amounts so bills can range widely
+  const amount = Math.round(baseFee * mult + Math.floor(Math.random() * 1500));
 
-    // insurance info sometimes present
-    const hasInsurance = Math.random() < 0.8;
-    const insuranceProvider = hasInsurance ? faker.company.name() : null;
+    // insurance info: pick from the patient's small set (1-4 choices) to avoid new provider each time
+    const insurers = patientInsuranceMap.get(rec.patientId.toString()) || [];
+    const hasInsurance = insurers.length > 0 && Math.random() < 0.85;
+    const insuranceProvider = hasInsurance ? getRandomElement(insurers) : null;
   // policy number: use faker.string.numeric for stable API across faker versions
   const policyNumber = hasInsurance ? faker.string.numeric(8) : null;
     const coveragePercent = hasInsurance ? (0.5 + Math.random() * 0.45) : 0;
