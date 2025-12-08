@@ -235,7 +235,8 @@ async function seed({ patients = 10, physicians = 20, maxPrescriptions = 15, max
       await pres.save();
     }
 
-    // Create up to maxAppointments appointments for this patient
+    // Weighted physician choice: prefer the first assigned doctor, sometimes switch
+    const primaryPhysician = getRandomElement(physicianDocs);
     const apptCount = faker.number.int({ min: 1, max: maxAppointments });
     for (let a = 0; a < apptCount; a++) {
       const med = getRandomElement(allMeds);
@@ -243,9 +244,12 @@ async function seed({ patients = 10, physicians = 20, maxPrescriptions = 15, max
       const notes = generateClinicalNoteFromTemplate(age, patient.gender, med.name, diagnosis);
 
       const apptDate = pickAppointmentDate(patient.dob);
+      const usePrimary = Math.random() < 0.7 || a === 0; // bias to primary, first appt always primary
+      const physicianPick = usePrimary ? primaryPhysician : getRandomElement(physicianDocs);
+
       const appt = new Appointment({
         patientID: patient._id,
-        physicianID: getRandomElement(physicianDocs)._id,
+        physicianID: physicianPick._id,
         date: apptDate,
         notes,
         summary: `${diagnosis.description} follow-up`,
