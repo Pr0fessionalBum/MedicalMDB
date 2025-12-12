@@ -13,7 +13,7 @@ npm install
 ```
 2) Seed demo data (optional but recommended):
 ```bash
-node Data/seed.js
+node Data/seed.js 100
 ```
    Add a number to control patients, e.g. `node Data/seed.js 25`.
 3) Start the app:
