@@ -16,6 +16,7 @@ npm install
 node Data/seed.js 100
 ```
    Add a number to control patients, e.g. `node Data/seed.js 25`.
+
 3) Start the app:
 ```bash
 node server.js
