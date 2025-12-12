@@ -12,21 +12,8 @@
     .full { grid-column: 1 / -1; }
   </style>
 </head>
-<body>
-  <nav class="navbar">
-    <div class="container">
-      <h1 class="logo">🏥 Medical DB</h1>
-      <ul class="nav-links">
-        <li><a href="/patients">Patients</a></li>
-        <li><a href="/physicians">Physicians</a></li>
-        <li><a href="/prescriptions">Prescriptions</a></li>
-        <li><a href="/appointments">Appointments</a></li>
-        <li><a href="/billings">Billings</a></li>
-        <li><a href="/analytics" class="active">Analytics</a></li>
-        <li><a href="/logout">Logout</a></li>
-      </ul>
-    </div>
-  </nav>
+  <%- include("partials/navbar", { activePage: "anaylitics" }) %>
+
 
   <div class="container">
     <div class="page-header">

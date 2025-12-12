@@ -120,7 +120,7 @@ router.get("/", async (req, res) => {
       totalPages,
       paginationQuery,
       renderPagination,
-      req, // REQUIRED for ejs pagination
+      req, // REQUIRED for pagination
       user: req.session?.physicianName,
       activePage: "physicians"
     });

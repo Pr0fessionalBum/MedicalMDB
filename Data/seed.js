@@ -209,7 +209,7 @@ async function seed({ patients = 10, physicians = 20, maxPrescriptions = 15, max
 
       // Generate realistic start and end dates
       // Start date: any time in the past 3 years
-      const startDate = faker.date.past({ years: 3 });
+      const startDate = faker.date.past({ years: 5 });
       // Duration: 1 to 12 months
       const durationMonths = faker.number.int({ min: 1, max: 12 });
       const endDate = new Date(startDate);

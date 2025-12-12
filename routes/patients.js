@@ -67,7 +67,6 @@ router.get("/", async (req, res) => {
       .limit(pageSize)
       .lean();
 
-    // ============= AJAX RESPONSE =============
     if (ajax) {
       return res.render(
         "partials/patient-row",
@@ -87,7 +86,7 @@ router.get("/", async (req, res) => {
       );
     }
 
-    // ============= FULL PAGE RENDER =============
+    //FULL PAGE RENDER
     res.render("patients", {
       patients,
       search,
@@ -103,7 +102,7 @@ router.get("/", async (req, res) => {
       query: req.query,
       user: req.session.physicianName,
       req,                 // REQUIRED for pagination util
-      renderPagination,    // <-- REQUIRED for EJS to call it
+      renderPagination,    
       activePage: "patients",
       canEdit: req.session?.physicianRole === "admin"
     });
@@ -189,12 +188,6 @@ router.get("/:id", async (req, res) => {
     const patient = await Patient.findById(req.params.id).lean();
 
     if (!patient) return res.status(404).send("Patient not found");
-
-    // Age calc
-    if (patient.dob) {
-      const dob = new Date(patient.dob);
-      patient.age = Math.floor((Date.now() - dob) / (365.25 * 24 * 3600 * 1000));
-    }
 
     const prescriptions = await Prescription.find({ patientID: patient._id, isDeleted: false })
       .populate("physicianID", "name")
